@@ -34,7 +34,7 @@
   .who { font-size: 12px; color: var(--soft); padding: 20px 10px 0; border-top: 1px solid var(--line); margin-top: 20px; }
   .who button { display: inline; width: auto; padding: 0; text-decoration: underline; color: var(--soft); font-weight: 400; }
 
-  main { padding: 28px 32px 64px; max-width: 1280px; width: 100%; }
+  main { padding: 28px 32px 64px; max-width: 1280px; width: 100%; min-width: 0; }
   h1 { font: 800 32px/1.1 var(--display); letter-spacing: -0.02em; margin: 0 0 6px; }
   .sub { color: var(--soft); margin: 0 0 24px; }
   h2 { font: 700 19px/1.2 var(--display); margin: 0 0 12px; }
@@ -117,6 +117,26 @@
   .login input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 11px 12px; margin: 10px 0; background: var(--bg); }
   .note { font-size: 13px; color: var(--soft); }
 
+  .pill.s-connected { background: #DCEBD6; color: #2C4524; }
+  .pill.s-error { background: #F6D5D9; color: #7D1020; }
+  .pill.s-paused { background: #FBEFC4; color: #5E4A07; }
+  .pill.s-not-connected { background: var(--sky); color: var(--soft); }
+  .icards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 14px; margin-bottom: 24px; }
+  .icard { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow-wrap: anywhere; }
+  .icard header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .icard h3 { font: 700 18px/1.2 var(--display); margin: 0; }
+  .icard .cat { font-size: 13px; color: var(--soft); }
+  .icard p { margin: 0; font-size: 14px; color: var(--soft); }
+  .secrets { list-style: none; margin: 0; padding: 0; font: 12.5px/1.6 ui-monospace, Menlo, monospace; }
+  .secrets li::before { content: "○ "; color: var(--soft); }
+  .secrets li.set::before { content: "● "; color: var(--flax); }
+  .icard .meta { font-size: 13px; color: var(--soft); }
+  .icard .err { font-size: 13px; color: var(--crimson); }
+  .icard footer { display: flex; gap: 8px; align-items: center; margin-top: auto; padding-top: 6px; flex-wrap: wrap; }
+  .toggle { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; cursor: pointer; }
+  .phase-h { font: 700 15px/1.2 var(--body); color: var(--soft); margin: 8px 0 10px; }
+  .health { display: flex; flex-wrap: wrap; gap: 8px; }
+  td a.ext { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
   @media (max-width: 860px) {
     .shell { grid-template-columns: 1fr; }
     nav.side { position: static; height: auto; display: flex; flex-wrap: wrap; gap: 4px; padding: 12px; }
@@ -170,7 +190,7 @@ const T = {
       { k: "status", label: "Status", type: "select", opts: ["To do", "In progress", "Blocked", "Done"], pill: true },
       { k: "start_date", label: "Start", type: "date" },
       { k: "due_date", label: "Due", type: "date", due: true },
-      { k: "clickup_url", label: "ClickUp link", type: "url", hide: true },
+      { k: "clickup_url", label: "ClickUp", type: "url", link: "Open" },
       { k: "notes", label: "Notes", type: "textarea", hide: true }
     ]
   },
@@ -232,7 +252,7 @@ const T = {
 
 const VIEWS = [
   ["overview", "Overview"], ["tasks", "Tasks"], ["timeline", "Timeline"], ["waitlist", "Waitlist"],
-  ["boxes", "Boxes"], ["suppliers", "Suppliers"], ["finance", "Financials"], ["marketing", "Marketing"], ["plan", "Plan"]
+  ["boxes", "Boxes"], ["suppliers", "Suppliers"], ["finance", "Financials"], ["marketing", "Marketing"], ["plan", "Plan"], ["integrations", "Integrations"]
 ];
 let state = { view: pref.get("hq_view") || "overview", user: null, filters: {}, cache: {} };
 
@@ -282,7 +302,7 @@ function renderShell() {
 function go(v) {
   state.view = v; pref.set("hq_view", v);
   app.querySelectorAll("[data-view]").forEach(b => b.dataset.view === v ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
-  ({ overview, tasks, timeline, waitlist, boxes, suppliers, finance, marketing, plan })[v]();
+  ({ overview, tasks, timeline, waitlist, boxes, suppliers, finance, marketing, plan, integrations })[v]();
 }
 const main = () => document.getElementById("main");
 async function load(table) {
@@ -331,6 +351,7 @@ function drawList(table, rows) {
 function cell(fd, row) {
   const v = fd.calc ? fd.calc(row) : row[fd.k];
   if (fd.money) return `<td class="num">${nzd(v)}</td>`;
+  if (fd.link) return `<td>${v && /^https:\/\//.test(v) ? `<a class="ext" href="${esc(v)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${fd.link}</a>` : ""}</td>`;
   if (fd.pill) return `<td><span class="pill s-${slug(v)}">${esc(v)}</span></td>`;
   if (fd.type === "date") {
     const late = fd.due && v && row.status !== "Done" && v < today();
@@ -379,11 +400,12 @@ function editRow(table, row) {
 /* ---------- Views ---------- */
 async function overview() {
   main().innerHTML = `<h1>Overview</h1><p class="sub">Where the Christmas launch stands today.</p><div id="ov">Loading…</div>`;
-  const [tasks, fin, wl, ppl, boxes] = await Promise.all([
+  const [tasks, fin, wl, ppl, boxes, integ] = await Promise.all([
     load("hq_tasks"), load("hq_finance"),
     sb.from("waitlist").select("id, country, referred_by, created_at").then(r => r.data || []),
     sb.from("waitlist_people").select("relationship, birthday_month").then(r => r.data || []),
-    load("hq_boxes")
+    load("hq_boxes"),
+    sb.from("integrations").select("key, name, status, phase, sort").neq("key", "system").order("sort").then(r => r.data || [])
   ]);
   const done = tasks.filter(t => t.status === "Done").length;
   const overdue = tasks.filter(t => t.status !== "Done" && t.due_date && t.due_date < today());
@@ -416,7 +438,13 @@ async function overview() {
       <div class="panel"><h2>Progress by phase</h2><div class="bars">${Object.entries(phases).sort().map(([p, [d, n]]) => `<div class="barrow"><span>${esc(p)}</span><div class="bartrack"><div class="barfill" style="width:${(d / n) * 100}%"></div></div><span class="n">${d}/${n}</span></div>`).join("")}</div></div>
       <div class="panel"><h2>Who they're buying for</h2><div class="bars">${bars(byRel, relMax)}</div><p class="note" style="margin-top:12px">Use this to size first stock orders per box.</p></div>
       <div class="panel"><h2>Where signups live</h2><div class="bars">${bars(byCountry, cMax)}</div></div>
+    </div>
+    <div class="panel"><h2>Integrations</h2>
+      <p class="note" style="margin:0 0 10px">${integ.filter(i => i.status === "connected").length} of ${integ.length} connected${integ.some(i => i.status === "error") ? `, <span class="overdue">${integ.filter(i => i.status === "error").length} with errors</span>` : ""}.</p>
+      <div class="health">${integ.map(i => `<span class="pill s-${slug(i.status)}" title="${esc(i.phase)}">${esc(i.name)}: ${esc(statusLabel(i.status))}</span>`).join("")}</div>
+      <p style="margin:12px 0 0"><button class="btn ghost" data-go="integrations">Open integrations</button></p>
     </div>`;
+  document.querySelector('[data-go="integrations"]').onclick = () => go("integrations");
 }
 
 async function tasks() { await listView("hq_tasks", "Tasks", "Every task in the Christmas plan, grouped by phase. Click a row to edit."); }
@@ -524,6 +552,126 @@ async function plan() {
     const { error } = await sb.from("hq_plan").insert({ key: slug(title) + "-" + Date.now().toString(36), title, body: "", sort: data.length + 1 });
     if (error) alert(error.message); else plan();
   };
+}
+
+/* ---------- Integrations ---------- */
+const SECRETS_URL = "https://supabase.com/dashboard/project/fmrabsrgdwqhyxcjnfgt/functions/secrets";
+const PHASES = ["Now", "Before pre-sale", "After Christmas", "Later"];
+const statusLabel = s => ({ connected: "Connected", not_connected: "Not connected", error: "Error", paused: "Paused" })[s] || s;
+const when = t => t ? new Date(t).toLocaleString("en-NZ", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "Never";
+
+async function callIntegrations(body) {
+  const { data, error } = await sb.functions.invoke("integrations-status", { body });
+  if (error) {
+    let msg = error.message;
+    try { const j = await error.context.json(); msg = j.error || msg; } catch {}
+    throw new Error(msg);
+  }
+  return data;
+}
+
+async function integrations() {
+  main().innerHTML = `<h1>Integrations</h1>
+    <p class="sub">Every outside tool connects through Supabase. Keys stay in Supabase secrets, never in this page.</p>
+    <div class="toolbar">
+      <button class="btn" id="intCheck">Check connections</button>
+      <button class="btn ghost" id="intTest">Run self-test</button>
+      <a class="btn ghost" href="${SECRETS_URL}" target="_blank" rel="noopener" style="text-decoration:none">Add secrets in Supabase</a>
+      <span class="spacer"></span><span class="muted" id="intMsg" role="status"></span>
+    </div>
+    <div id="intCards">Loading…</div>
+    <h2 style="margin-top:8px">Recent activity</h2><div id="intLog"></div>`;
+  document.getElementById("intCheck").onclick = () => drawIntegrations(true);
+  document.getElementById("intTest").onclick = runSelfTest;
+  await drawIntegrations(true);
+}
+
+async function drawIntegrations(live) {
+  const msg = document.getElementById("intMsg");
+  let rows, secretsKnown = false;
+  if (live) {
+    msg.textContent = "Checking connections…";
+    try {
+      rows = (await callIntegrations({ action: "status" })).integrations;
+      secretsKnown = true;
+      msg.textContent = `Checked ${new Date().toLocaleTimeString("en-NZ", { hour: "numeric", minute: "2-digit" })}`;
+    } catch (e) {
+      msg.textContent = "Couldn't reach the integrations service: " + e.message;
+    }
+  }
+  if (rows) {
+    state.secrets = Object.fromEntries(rows.map(r => [r.key, r.secrets || {}]));
+  } else {
+    const { data, error } = await sb.from("integrations").select("*").order("sort");
+    if (error) { document.getElementById("intCards").textContent = error.message; return; }
+    rows = data.map(r => ({ ...r, secrets: state.secrets?.[r.key] }));
+    secretsKnown = Boolean(state.secrets);
+  }
+  const { data: logs } = await sb.from("sync_log").select("*").order("created_at", { ascending: false }).limit(60);
+  const byKey = {}; (logs || []).forEach(l => (byKey[l.integration_key] ||= []).push(l));
+  const tools = rows.filter(r => r.key !== "system");
+
+  document.getElementById("intCards").innerHTML = PHASES.map(ph => {
+    const group = tools.filter(t => t.phase === ph);
+    if (!group.length) return "";
+    return `<h3 class="phase-h">${esc(ph)}</h3><div class="icards">${group.map(t => card(t, secretsKnown, byKey[t.key] || [])).join("")}</div>`;
+  }).join("");
+
+  document.getElementById("intLog").innerHTML = `<div class="tablewrap"><table><thead><tr><th>When</th><th>Tool</th><th>Result</th><th>Detail</th></tr></thead><tbody>
+    ${(logs || []).slice(0, 25).map(l => `<tr style="cursor:default"><td style="white-space:nowrap">${when(l.created_at)}</td><td>${esc((rows.find(r => r.key === l.integration_key) || {}).name || l.integration_key)}</td>
+      <td><span class="pill s-${l.status === "ok" ? "done" : l.status === "error" ? "blocked" : "to-do"}">${esc(l.status)}</span></td><td class="muted">${esc(l.message)}</td></tr>`).join("")
+      || `<tr><td colspan="4" class="empty">No activity yet. Run the self-test to see the plumbing work.</td></tr>`}
+  </tbody></table></div>`;
+
+  document.querySelectorAll("[data-sync]").forEach(b => b.onclick = () => syncNow(b.dataset.sync, b));
+  document.querySelectorAll("[data-enable]").forEach(cb => cb.onchange = async () => {
+    const { error } = await sb.from("integrations").update({ enabled: cb.checked }).eq("key", cb.dataset.enable);
+    msg.textContent = error ? "Didn't save: " + error.message : `${cb.checked ? "Scheduled syncing on" : "Scheduled syncing off"} for ${cb.dataset.name}.`;
+  });
+}
+
+function card(t, secretsKnown, logs) {
+  const req = t.required_secrets || [];
+  const secrets = req.length
+    ? `<ul class="secrets" aria-label="Secrets needed">${req.map(n => `<li class="${secretsKnown && t.secrets?.[n] ? "set" : ""}">${esc(n)}${secretsKnown ? (t.secrets?.[n] ? "" : " (not set)") : ""}</li>`).join("")}</ul>`
+    : `<p>No secrets needed.</p>`;
+  const last = logs[0];
+  return `<article class="icard">
+    <header><div><h3>${esc(t.name)}</h3><span class="cat">${esc(t.category)}</span></div><span class="pill s-${slug(t.status)}">${esc(statusLabel(t.status))}</span></header>
+    <p>${esc(t.description || "")}</p>
+    ${secrets}
+    <div class="meta">Last sync: ${when(t.last_sync_at)} · every ${t.sync_every_minutes >= 1440 ? "day" : t.sync_every_minutes + " min"}</div>
+    ${t.last_error ? `<div class="err">${esc(t.last_error)}</div>` : last ? `<div class="meta">Latest: ${esc(last.message || last.status)}</div>` : ""}
+    <footer>
+      <button class="btn" data-sync="${esc(t.key)}">Sync now</button>
+      <label class="toggle"><input type="checkbox" data-enable="${esc(t.key)}" data-name="${esc(t.name)}" ${t.enabled ? "checked" : ""}> Scheduled sync</label>
+    </footer>
+  </article>`;
+}
+
+async function syncNow(key, btn) {
+  const msg = document.getElementById("intMsg");
+  btn.disabled = true; btn.textContent = "Syncing…";
+  try {
+    const r = await callIntegrations({ action: "sync", key });
+    msg.textContent = r.message;
+  } catch (e) {
+    msg.textContent = "Sync failed: " + e.message;
+  }
+  await drawIntegrations(false);
+}
+
+async function runSelfTest() {
+  const msg = document.getElementById("intMsg");
+  msg.textContent = "Running self-test…";
+  try {
+    const r = await callIntegrations({ action: "selftest" });
+    const failed = r.results.filter(x => !x.pass);
+    msg.textContent = r.pass ? `Self-test passed: ${r.results.length}/${r.results.length} checks.` : `Self-test failed: ${failed.map(f => f.check).join(", ")}`;
+  } catch (e) {
+    msg.textContent = "Self-test couldn't run: " + e.message;
+  }
+  await drawIntegrations(false);
 }
 
 boot();

@@ -28,7 +28,7 @@ PHASE 1 — CORE HQ (views in a left sidebar; remember last view)
 9. Plan: hq_plan sections as sanitised markdown, inline edit, add section.
 Build every list view from ONE config-driven CRUD engine (fields, types, options, filters, grouping, formatting) with one shared table renderer and one add/edit/delete dialog.
 
-PHASE 2 — INTEGRATIONS FRAMEWORK (build before any single connector)
+PHASE 2 — INTEGRATIONS FRAMEWORK (build before any single connector) [DONE 18 Oct 2026: migrations 000003, functions integrations-status and integrations-cron, HQ Integrations view]
 Migrations:
 - integrations(key pk, name, category, status 'not_connected'|'connected'|'error'|'paused', config jsonb (non-secret settings only), last_sync_at, last_error, updated_at)
 - sync_log(id, integration_key, direction 'in'|'out', entity, entity_id, external_id, status 'ok'|'error', message, payload jsonb, created_at)

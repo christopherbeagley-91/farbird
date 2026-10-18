@@ -1,0 +1,7 @@
+# Functions authorise callers themselves (team member JWT or the internal scheduler secret),
+# so the gateway JWT check is off. Deploy with: supabase functions deploy <name>
+[functions.integrations-status]
+verify_jwt = false
+
+[functions.integrations-cron]
+verify_jwt = false

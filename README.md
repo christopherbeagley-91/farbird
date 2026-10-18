@@ -36,6 +36,36 @@ Christmas gifts home, sorted. Personalised NZ gift boxes for Kiwis abroad.
 - Referral: every signup gets `?ref=<code>`; referrals are credited automatically.
 - Campaign tracking: add `?utm_source=kea&utm_campaign=xmas` (or `?src=flatwhite-nyc`). It shows in HQ → Waitlist.
 
+## Integrations (Phase 2 framework)
+
+Every outside tool connects through Supabase Edge Functions. API keys live in **Supabase → Edge Functions → Secrets** and never touch the browser.
+
+| Piece | Where |
+| --- | --- |
+| Tool list, status, settings | `integrations` table, shown in HQ → Integrations |
+| What happened | `sync_log` (kept 90 days) |
+| Farbird row ↔ other tool's record | `external_refs` (ClickUp task links already moved here) |
+| Inbound webhooks, stored once | `webhook_events` (unique per tool + event id) |
+| Status, Sync now, self-test | `supabase/functions/integrations-status` |
+| Scheduler (pg_cron every 5 min) | `supabase/functions/integrations-cron` |
+| Shared helpers | `supabase/functions/_shared/` (auth, secrets, logging, retry, webhook signatures, dispatch) |
+
+**Connect a tool:** add its secrets in Supabase, open HQ → Integrations → Check connections, then Sync now. Tick "Scheduled sync" to run it on its interval.
+
+| Tool | Secrets |
+| --- | --- |
+| ClickUp | `CLICKUP_API_TOKEN`, `CLICKUP_WEBHOOK_SECRET` |
+| Stripe | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
+| Resend | `RESEND_API_KEY` |
+| PostHog | `POSTHOG_PERSONAL_API_KEY` |
+| Google Workspace | `GOOGLE_SERVICE_ACCOUNT_JSON` |
+| NZ courier | `COURIER_API_KEY` |
+| Twilio | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` |
+
+**Add a connector (Phase 3):** deploy `<key>-sync` (and `<key>-webhook` if the tool sends events) using `_shared/`. The dispatcher finds it by name; until it exists, Sync now reports "isn't built yet".
+
+**Tests:** `deno test supabase/functions/_shared/shared_test.ts` (signatures, retry, scheduling). HQ → Integrations → Run self-test checks the live database path.
+
 ## How it's secured
 
 - The public key in the HTML can only call `join_waitlist()` and `waitlist_count()`. Row-level security returns nothing to anonymous reads.

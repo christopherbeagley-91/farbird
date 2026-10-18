@@ -15,6 +15,7 @@ Christmas 2026 test. Waitlist from 19 Oct, pre-sale 9 Nov, last order date Sat 1
 - `index.html` — public waitlist page (static, deployed to GitHub Pages by `.github/workflows/pages.yml`). Writes only through the `join_waitlist` RPC.
 - `hq/index.html` — Farbird HQ, the team-only project manager / CRM (tasks, timeline, waitlist, boxes, suppliers, financials, marketing, plan). Magic-link sign-in; access gated by `public.team_members`.
 - `supabase/migrations/` — schema as applied to the live project.
+- `supabase/functions/` — Edge Functions. `_shared/` holds auth, secrets, logging, retry, webhook and dispatch helpers; `integrations-status` (HQ status/Sync now/self-test) and `integrations-cron` (pg_cron every 5 min).
 - `docs/hq-build-prompt.md` — the HQ roadmap: core views, integrations framework (edge functions, secrets, sync log, external refs), connectors (ClickUp, Stripe, Resend, PostHog, Google Workspace, courier, UGC, Twilio, Canva) and CRM/loyalty. Follow it for any HQ or integration work.
 
 ## Stack
@@ -23,6 +24,7 @@ Christmas 2026 test. Waitlist from 19 Oct, pre-sale 9 Nov, last order date Sat 1
 - ClickUp: folder "Farbird — Christmas 2026" in Team Space (lists 1-7 by workstream). Each `hq_tasks.clickup_url` links to its ClickUp task.
 
 ## Rules
+- Integrations: third-party keys only in Supabase Edge Function secrets, never in HTML. Connectors are `<key>-sync` / `<key>-webhook` functions built on `_shared/`, deployed with verify_jwt = false (they call `authorize()`). Map records via `external_refs`, log via `logSync`, store webhooks via `recordWebhook` before processing.
 - Never add an `anon` select policy on `waitlist` or `waitlist_people`. Public writes go through `join_waitlist()` only.
 - New HQ tables: enable RLS and add the `"team all"` policy using `public.is_team()`, plus the `touch` trigger.
 - Add a teammate: `insert into public.team_members (email, name, role) values (...)`.
