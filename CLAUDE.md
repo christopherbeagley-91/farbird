@@ -15,6 +15,7 @@ Christmas 2026 test. Waitlist from 19 Oct, pre-sale 9 Nov, last order date Sat 1
 - `index.html` — public waitlist page (static, deployed to GitHub Pages by `.github/workflows/pages.yml`). Writes only through the `join_waitlist` RPC.
 - `hq/index.html` — Farbird HQ, the team-only project manager / CRM (tasks, timeline, waitlist, boxes, suppliers, financials, marketing, plan). Magic-link sign-in; access gated by `public.team_members`.
 - `supabase/migrations/` — schema as applied to the live project.
+- `docs/hq-build-prompt.md` — the HQ roadmap: core views, integrations framework (edge functions, secrets, sync log, external refs), connectors (ClickUp, Stripe, Resend, PostHog, Google Workspace, courier, UGC, Twilio, Canva) and CRM/loyalty. Follow it for any HQ or integration work.
 
 ## Stack
 - Supabase project `farbird` (ref `fmrabsrgdwqhyxcjnfgt`, region ap-southeast-2 Sydney). Publishable key is in the HTML on purpose; it is safe because RLS blocks all direct table access for `anon`.
