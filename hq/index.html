@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Farbird HQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EEF3F5; --panel: #FFFFFF; --ink: #17222E; --soft: #56636F; --line: #D3DEE3;
+    --crimson: #B3182B; --flax: #3D5A33; --kowhai: #F1C232; --sky: #E4EEF2; --blue: #5B8FA8;
+    --display: "Bricolage Grotesque", Georgia, serif; --body: "Instrument Sans", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #111A22; --panel: #18242F; --ink: #E8EEF2; --soft: #9AA8B4; --line: #2B3A47; --sky: #1E2D39; }
+  }
+  :root[data-theme="dark"] { --bg: #111A22; --panel: #18242F; --ink: #E8EEF2; --soft: #9AA8B4; --line: #2B3A47; --sky: #1E2D39; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--kowhai); outline-offset: 2px; }
+  a { color: inherit; }
+
+  .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+  nav.side { background: var(--panel); border-right: 1px solid var(--line); padding: 20px 14px; position: sticky; top: 0; height: 100vh; overflow: auto; }
+  .brand { font: 800 22px/1 var(--display); letter-spacing: -0.02em; padding: 4px 10px 20px; }
+  .brand small { display: block; font: 500 12px var(--body); color: var(--soft); letter-spacing: 0; margin-top: 4px; }
+  nav.side button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-weight: 500; color: var(--soft); }
+  nav.side button[aria-current="page"] { background: var(--sky); color: var(--ink); }
+  nav.side button:hover { color: var(--ink); }
+  .who { font-size: 12px; color: var(--soft); padding: 20px 10px 0; border-top: 1px solid var(--line); margin-top: 20px; }
+  .who button { display: inline; width: auto; padding: 0; text-decoration: underline; color: var(--soft); font-weight: 400; }
+
+  main { padding: 28px 32px 64px; max-width: 1280px; width: 100%; }
+  h1 { font: 800 32px/1.1 var(--display); letter-spacing: -0.02em; margin: 0 0 6px; }
+  .sub { color: var(--soft); margin: 0 0 24px; }
+  h2 { font: 700 19px/1.2 var(--display); margin: 0 0 12px; }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .kpi b { display: block; font: 800 32px/1.1 var(--display); }
+  .kpi span { color: var(--soft); font-size: 13px; }
+  .kpi.alert b { color: var(--crimson); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  .bars { display: grid; gap: 10px; }
+  .barrow { display: grid; grid-template-columns: 150px 1fr 60px; gap: 10px; align-items: center; font-size: 14px; }
+  .bartrack { height: 10px; background: var(--sky); border-radius: 99px; overflow: hidden; }
+  .barfill { height: 100%; background: var(--flax); border-radius: 99px; }
+  .barrow .n { text-align: right; color: var(--soft); font-variant-numeric: tabular-nums; }
+
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .toolbar select, .toolbar input { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 7px 10px; }
+  .btn { border: 0; background: var(--ink); color: var(--panel); border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+  .btn.ghost { background: none; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+  .btn.danger { background: none; color: var(--crimson); box-shadow: inset 0 0 0 1px var(--line); }
+  .spacer { flex: 1; }
+
+  .tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--soft); font-size: 13px; white-space: nowrap; position: sticky; top: 0; background: var(--panel); }
+  tr:last-child td { border-bottom: 0; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover td { background: var(--sky); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.group td { background: var(--bg); font-weight: 600; cursor: default; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--sky); }
+  .pill.s-done, .pill.s-approved, .pill.s-live { background: #DCEBD6; color: #2C4524; }
+  .pill.s-in-progress, .pill.s-sampling, .pill.s-quoted, .pill.s-sourcing, .pill.s-sampled { background: #FBEFC4; color: #5E4A07; }
+  .pill.s-blocked, .pill.s-rejected { background: #F6D5D9; color: #7D1020; }
+  .overdue { color: var(--crimson); font-weight: 600; }
+  .muted { color: var(--soft); }
+  .empty { padding: 32px; text-align: center; color: var(--soft); }
+
+  /* Timeline */
+  .tl { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; overflow-x: auto; }
+  .tl-inner { min-width: 860px; position: relative; }
+  .tl-head { display: grid; position: relative; height: 26px; margin-left: 300px; border-bottom: 1px solid var(--line); }
+  .tl-head span { position: absolute; font-size: 12px; color: var(--soft); transform: translateX(-50%); white-space: nowrap; }
+  .tl-row { display: grid; grid-template-columns: 300px 1fr; align-items: center; min-height: 30px; border-bottom: 1px solid var(--line); }
+  .tl-row.phase { font-weight: 600; background: var(--bg); }
+  .tl-name { font-size: 13px; padding-right: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tl-track { position: relative; height: 30px; }
+  .tl-bar { position: absolute; top: 9px; height: 12px; border-radius: 99px; background: var(--blue); min-width: 8px; }
+  .tl-bar.done { background: var(--flax); }
+  .tl-bar.blocked { background: var(--crimson); }
+  .tl-today { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--kowhai); }
+
+  /* Plan */
+  .doc { max-width: 760px; }
+  .doc section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px 24px; margin-bottom: 16px; }
+  .doc section header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .md table { margin: 8px 0; border: 1px solid var(--line); border-radius: 8px; }
+  .md th { position: static; }
+  .md p, .md ul { margin: 8px 0; }
+  .md td, .md th { cursor: default; }
+  textarea.mdedit { width: 100%; min-height: 260px; border: 1px solid var(--line); border-radius: 8px; padding: 12px; font: 13px/1.5 ui-monospace, Menlo, monospace; background: var(--bg); }
+
+  /* Dialog */
+  dialog { border: 0; border-radius: 16px; padding: 0; width: min(560px, 94vw); max-height: 92vh; overflow: auto; background: var(--panel); color: var(--ink); box-shadow: 0 30px 80px rgba(0,0,0,.35); }
+  dialog::backdrop { background: rgba(17, 26, 34, .45); }
+  dialog form { padding: 22px; display: grid; gap: 12px; }
+  dialog label { font-size: 13px; font-weight: 600; display: grid; gap: 4px; }
+  dialog input, dialog select, dialog textarea { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 9px 10px; width: 100%; }
+  dialog textarea { min-height: 80px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .actions { display: flex; gap: 8px; margin-top: 6px; }
+
+  /* Login */
+  .login { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
+  .login .panel { width: min(420px, 100%); }
+  .login input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 11px 12px; margin: 10px 0; background: var(--bg); }
+  .note { font-size: 13px; color: var(--soft); }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    nav.side { position: static; height: auto; display: flex; flex-wrap: wrap; gap: 4px; padding: 12px; }
+    nav.side button { width: auto; }
+    .brand { width: 100%; padding-bottom: 8px; }
+    .who { width: 100%; border: 0; margin: 0; padding: 4px 10px; }
+    main { padding: 20px 16px 48px; }
+    .grid2 { grid-template-columns: 1fr; }
+    .two { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<dialog id="dlg"><form id="dlgForm" method="dialog"></form></dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script>
+const SUPABASE_URL = "https://fmrabsrgdwqhyxcjnfgt.supabase.co";
+const SUPABASE_KEY = "sb_publishable_QwqBZMs_EqITjZ9hRSI9ig_Cu2Wnc7v";
+const LAST_ORDER = "2026-12-12";
+const PRESALE = "2026-11-09";
+const WAITLIST_TARGET = 500;
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const app = document.getElementById("app");
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const slug = s => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+const nzd = n => n == null || n === "" ? "" : "NZ$" + Number(n).toLocaleString("en-NZ", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const today = () => new Date().toISOString().slice(0, 10);
+const fmtDate = d => d ? new Date(d + "T00:00:00").toLocaleDateString("en-NZ", { day: "numeric", month: "short" }) : "";
+const daysTo = d => Math.ceil((new Date(d + "T00:00:00") - new Date(today() + "T00:00:00")) / 864e5);
+const plural = w => w.endsWith("y") ? w.slice(0, -1) + "ies" : w.endsWith("s") ? w : w + "s";
+const md = s => DOMPurify.sanitize(marked.parse(s || ""));
+const pref = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+/* ---------- Table configs: one CRUD engine drives every list ---------- */
+const OWNERS = ["Chris", "Mum", "Lauren", "Lynn", "Chris + Mum", "Chris + Lauren", "Lauren + Mum", "Lauren + Lynn", "All"];
+const T = {
+  hq_tasks: {
+    label: "task", order: ["due_date", true], group: "phase",
+    filters: ["workstream", "owner", "status"],
+    fields: [
+      { k: "title", label: "Task", req: true, wide: true },
+      { k: "phase", label: "Phase", type: "select", opts: ["1. Lock", "2. Build demand", "3. Pre-sale", "4. Sell & batch-buy", "5. Last-minute push", "6. Dispatch", "7. Convert", "Backlog"] },
+      { k: "workstream", label: "Workstream", type: "select", opts: ["Brand", "Product & Suppliers", "Print & Packaging", "Waitlist & Tech", "Marketing", "Partnerships", "Ops", "Finance & Legal", "General"] },
+      { k: "owner", label: "Owner", type: "select", opts: OWNERS },
+      { k: "status", label: "Status", type: "select", opts: ["To do", "In progress", "Blocked", "Done"], pill: true },
+      { k: "start_date", label: "Start", type: "date" },
+      { k: "due_date", label: "Due", type: "date", due: true },
+      { k: "clickup_url", label: "ClickUp link", type: "url", hide: true },
+      { k: "notes", label: "Notes", type: "textarea", hide: true }
+    ]
+  },
+  hq_suppliers: {
+    label: "supplier", order: ["name", true], filters: ["category", "status", "owner"],
+    fields: [
+      { k: "name", label: "Supplier", req: true },
+      { k: "category", label: "Category", type: "select", opts: ["Chocolate & sweets", "Coffee & tea", "Pantry", "Skincare & body", "Homeware", "Kids", "Packaging", "Print", "Courier", "China branded items", "Other"] },
+      { k: "location", label: "Location" },
+      { k: "contact", label: "Contact" },
+      { k: "products", label: "Products", hide: true, type: "textarea" },
+      { k: "unit_cost_nzd", label: "Unit cost", type: "number", money: true },
+      { k: "moq", label: "MOQ", type: "number" },
+      { k: "lead_time_days", label: "Lead days", type: "number" },
+      { k: "status", label: "Status", type: "select", opts: ["Prospect", "Contacted", "Quoted", "Sampling", "Approved", "Rejected"], pill: true },
+      { k: "owner", label: "Owner", type: "select", opts: OWNERS },
+      { k: "notes", label: "Notes", type: "textarea", hide: true }
+    ]
+  },
+  hq_boxes: {
+    label: "box", order: ["name", true], filters: ["kind", "status"],
+    fields: [
+      { k: "name", label: "Box", req: true },
+      { k: "kind", label: "Type", type: "select", opts: ["Relationship", "Persona", "Drop"] },
+      { k: "tier", label: "Tier" },
+      { k: "price_nzd", label: "Price", type: "number", money: true },
+      { k: "cogs_nzd", label: "COGS", type: "number", money: true },
+      { k: "_gp", label: "Gross profit", calc: r => r.price_nzd && r.cogs_nzd ? Number(r.price_nzd) - Number(r.cogs_nzd) : null, money: true },
+      { k: "items", label: "Contents", type: "textarea" },
+      { k: "status", label: "Status", type: "select", opts: ["Concept", "Sourcing", "Sampled", "Live", "Retired"], pill: true },
+      { k: "notes", label: "Notes", type: "textarea", hide: true }
+    ]
+  },
+  hq_finance: {
+    label: "line", order: ["kind", true], filters: ["kind", "category"],
+    fields: [
+      { k: "kind", label: "Type", type: "select", opts: ["Budget", "Actual cost", "Revenue"], req: true },
+      { k: "category", label: "Category", type: "select", opts: ["Legal & admin", "Product", "Print", "Marketing", "Tech", "Brand", "Ops", "Sales"], req: true },
+      { k: "item", label: "Item", req: true },
+      { k: "amount_nzd", label: "Amount", type: "number", money: true, req: true },
+      { k: "entry_date", label: "Date", type: "date" },
+      { k: "notes", label: "Notes", type: "textarea" }
+    ]
+  },
+  hq_channels: {
+    label: "channel", order: ["channel", true], filters: ["type", "status", "owner"],
+    fields: [
+      { k: "channel", label: "Channel", req: true },
+      { k: "type", label: "Type", type: "select", opts: ["Community", "Partnership", "Event", "Influencer", "Content", "Loop", "Paid"] },
+      { k: "owner", label: "Owner", type: "select", opts: OWNERS },
+      { k: "status", label: "Status", type: "select", opts: ["Planned", "Live", "Paused", "Done"], pill: true },
+      { k: "target", label: "Target" },
+      { k: "result", label: "Result" },
+      { k: "cost_nzd", label: "Cost", type: "number", money: true },
+      { k: "notes", label: "Notes", type: "textarea", hide: true }
+    ]
+  }
+};
+
+const VIEWS = [
+  ["overview", "Overview"], ["tasks", "Tasks"], ["timeline", "Timeline"], ["waitlist", "Waitlist"],
+  ["boxes", "Boxes"], ["suppliers", "Suppliers"], ["finance", "Financials"], ["marketing", "Marketing"], ["plan", "Plan"]
+];
+let state = { view: pref.get("hq_view") || "overview", user: null, filters: {}, cache: {} };
+
+/* ---------- Auth ---------- */
+async function boot() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return renderLogin();
+  state.user = session.user;
+  const { data: ok, error } = await sb.rpc("is_team");
+  if (error || !ok) return renderLogin(`${esc(session.user.email)} isn't on the Farbird team list. Ask Chris to add you.`);
+  renderShell();
+}
+sb.auth.onAuthStateChange((evt) => { if (evt === "SIGNED_IN" || evt === "SIGNED_OUT") boot(); });
+
+function renderLogin(msg) {
+  app.innerHTML = `<div class="login"><div class="panel">
+    <h1>Farbird HQ</h1>
+    <p class="sub" style="margin-bottom:8px">Sign in with your email. We'll send you a link.</p>
+    <form id="loginForm"><label class="note" for="loginEmail">Email</label>
+      <input id="loginEmail" type="email" autocomplete="email" required>
+      <button class="btn" style="width:100%">Email me a sign-in link</button></form>
+    <p class="note" id="loginMsg">${msg || ""}</p>
+    ${state.user ? `<button class="btn ghost" id="signout">Sign out</button>` : ""}
+  </div></div>`;
+  document.getElementById("loginForm").onsubmit = async e => {
+    e.preventDefault();
+    const email = document.getElementById("loginEmail").value.trim();
+    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+    document.getElementById("loginMsg").textContent = error ? "That didn't send: " + error.message : `Check ${email} for your sign-in link.`;
+  };
+  const so = document.getElementById("signout"); if (so) so.onclick = () => sb.auth.signOut();
+}
+
+/* ---------- Shell ---------- */
+function renderShell() {
+  app.innerHTML = `<div class="shell">
+    <nav class="side" aria-label="Sections">
+      <div class="brand">Farbird HQ<small>Christmas 2026 launch</small></div>
+      ${VIEWS.map(([k, l]) => `<button data-view="${k}">${l}</button>`).join("")}
+      <div class="who">${esc(state.user.email)}<br><button id="signout">Sign out</button></div>
+    </nav>
+    <main id="main"></main></div>`;
+  app.querySelectorAll("[data-view]").forEach(b => b.onclick = () => go(b.dataset.view));
+  document.getElementById("signout").onclick = () => sb.auth.signOut();
+  go(state.view);
+}
+function go(v) {
+  state.view = v; pref.set("hq_view", v);
+  app.querySelectorAll("[data-view]").forEach(b => b.dataset.view === v ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
+  ({ overview, tasks, timeline, waitlist, boxes, suppliers, finance, marketing, plan })[v]();
+}
+const main = () => document.getElementById("main");
+async function load(table) {
+  const { data, error } = await sb.from(table).select("*");
+  if (error) { main().innerHTML = `<div class="panel">Couldn't load ${table}: ${esc(error.message)}</div>`; throw error; }
+  state.cache[table] = data; return data;
+}
+
+/* ---------- Generic list view ---------- */
+async function listView(table, title, sub, extraTop = "") {
+  const cfg = T[table];
+  main().innerHTML = `<h1>${title}</h1><p class="sub">${sub}</p>${extraTop}<div id="tbl"></div>`;
+  const rows = await load(table);
+  drawList(table, rows);
+}
+function drawList(table, rows) {
+  const cfg = T[table];
+  const f = state.filters[table] ||= {};
+  const visible = cfg.fields.filter(x => !x.hide);
+  let r = rows.filter(row => Object.entries(f).every(([k, v]) => !v || (k === "_q" ? JSON.stringify(row).toLowerCase().includes(v.toLowerCase()) : row[k] === v)));
+  const [ok, asc] = cfg.order;
+  r.sort((a, b) => String(a[ok] ?? "9999").localeCompare(String(b[ok] ?? "9999")) * (asc ? 1 : -1));
+  if (cfg.group) r.sort((a, b) => String(a[cfg.group] ?? "zz").localeCompare(String(b[cfg.group] ?? "zz")));
+
+  const filt = cfg.filters.map(k => {
+    const fd = cfg.fields.find(x => x.k === k);
+    const vals = fd.opts || [...new Set(rows.map(x => x[k]).filter(Boolean))].sort();
+    return `<select data-f="${k}" aria-label="Filter by ${fd.label}"><option value="">All ${plural(fd.label.toLowerCase())}</option>${vals.map(v => `<option ${f[k] === v ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`;
+  }).join("");
+
+  let body = "", lastG;
+  for (const row of r) {
+    if (cfg.group && row[cfg.group] !== lastG) { lastG = row[cfg.group]; body += `<tr class="group"><td colspan="${visible.length}">${esc(lastG || "No phase")}</td></tr>`; }
+    body += `<tr data-id="${row.id}">${visible.map(fd => cell(fd, row)).join("")}</tr>`;
+  }
+  document.getElementById("tbl").innerHTML = `
+    <div class="toolbar">${filt}<input data-f="_q" placeholder="Search" value="${esc(f._q || "")}" aria-label="Search">
+      <span class="spacer"></span><span class="muted">${r.length} of ${rows.length}</span>
+      <button class="btn" id="addRow">Add ${cfg.label}</button></div>
+    <div class="tablewrap"><table><thead><tr>${visible.map(fd => `<th class="${fd.money ? "num" : ""}">${fd.label}</th>`).join("")}</tr></thead>
+      <tbody>${body || `<tr><td colspan="${visible.length}" class="empty">Nothing here yet. Add the first ${cfg.label}.</td></tr>`}</tbody></table></div>`;
+  document.querySelectorAll("#tbl [data-f]").forEach(el => el.oninput = () => { f[el.dataset.f] = el.value; drawList(table, rows); if (el.dataset.f === "_q") { const q = document.querySelector('#tbl [data-f="_q"]'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); } });
+  document.getElementById("addRow").onclick = () => editRow(table, {});
+  document.querySelectorAll("#tbl tbody tr[data-id]").forEach(tr => tr.onclick = () => editRow(table, rows.find(x => x.id === tr.dataset.id)));
+}
+function cell(fd, row) {
+  const v = fd.calc ? fd.calc(row) : row[fd.k];
+  if (fd.money) return `<td class="num">${nzd(v)}</td>`;
+  if (fd.pill) return `<td><span class="pill s-${slug(v)}">${esc(v)}</span></td>`;
+  if (fd.type === "date") {
+    const late = fd.due && v && row.status !== "Done" && v < today();
+    return `<td class="${late ? "overdue" : ""}" style="white-space:nowrap">${fmtDate(v)}</td>`;
+  }
+  if (fd.type === "textarea") return `<td class="muted">${esc(String(v || "").slice(0, 90))}</td>`;
+  return `<td>${esc(v)}</td>`;
+}
+
+/* ---------- Edit dialog ---------- */
+function editRow(table, row) {
+  const cfg = T[table], isNew = !row.id;
+  const dlg = document.getElementById("dlg"), form = document.getElementById("dlgForm");
+  const input = fd => {
+    const v = row[fd.k] ?? "";
+    if (fd.type === "select") return `<select name="${fd.k}">${fd.req ? "" : `<option value=""></option>`}${fd.opts.map(o => `<option ${o === v ? "selected" : ""}>${esc(o)}</option>`).join("")}${v && !fd.opts.includes(v) ? `<option selected>${esc(v)}</option>` : ""}</select>`;
+    if (fd.type === "textarea") return `<textarea name="${fd.k}">${esc(v)}</textarea>`;
+    return `<input name="${fd.k}" type="${fd.type || "text"}" ${fd.type === "number" ? 'step="any"' : ""} value="${esc(v)}" ${fd.req ? "required" : ""}>`;
+  };
+  const fields = cfg.fields.filter(fd => !fd.calc);
+  form.innerHTML = `<h2>${isNew ? "Add" : "Edit"} ${cfg.label}</h2>
+    ${fields.map(fd => `<label>${fd.label}${input(fd)}</label>`).join("")}
+    ${!isNew && row.updated_at ? `<p class="note">Last updated ${new Date(row.updated_at).toLocaleString("en-NZ")}</p>` : ""}
+    <p class="note" id="dlgErr" role="alert"></p>
+    <div class="actions"><button class="btn" value="save">Save</button><button class="btn ghost" value="cancel" formnovalidate>Cancel</button>
+    <span class="spacer"></span>${isNew ? "" : `<button class="btn danger" value="delete" formnovalidate>Delete</button>`}</div>`;
+  form.onsubmit = async e => {
+    const action = e.submitter?.value;
+    if (action === "cancel") return;
+    e.preventDefault();
+    let res;
+    if (action === "delete") {
+      if (!confirm(`Delete this ${cfg.label}?`)) return;
+      res = await sb.from(table).delete().eq("id", row.id);
+    } else {
+      const payload = {};
+      fields.forEach(fd => { const val = form.elements[fd.k].value.trim(); payload[fd.k] = val === "" ? null : (fd.type === "number" ? Number(val) : val); });
+      res = isNew ? await sb.from(table).insert(payload) : await sb.from(table).update(payload).eq("id", row.id);
+    }
+    if (res.error) { document.getElementById("dlgErr").textContent = "Didn't save: " + res.error.message; return; }
+    dlg.close(); go(state.view);
+  };
+  dlg.showModal();
+}
+
+/* ---------- Views ---------- */
+async function overview() {
+  main().innerHTML = `<h1>Overview</h1><p class="sub">Where the Christmas launch stands today.</p><div id="ov">Loading…</div>`;
+  const [tasks, fin, wl, ppl, boxes] = await Promise.all([
+    load("hq_tasks"), load("hq_finance"),
+    sb.from("waitlist").select("id, country, referred_by, created_at").then(r => r.data || []),
+    sb.from("waitlist_people").select("relationship, birthday_month").then(r => r.data || []),
+    load("hq_boxes")
+  ]);
+  const done = tasks.filter(t => t.status === "Done").length;
+  const overdue = tasks.filter(t => t.status !== "Done" && t.due_date && t.due_date < today());
+  const thisWeek = tasks.filter(t => t.status !== "Done" && t.due_date && daysTo(t.due_date) >= 0 && daysTo(t.due_date) <= 7).sort((a, b) => a.due_date.localeCompare(b.due_date));
+  const sum = k => fin.filter(x => x.kind === k).reduce((s, x) => s + Number(x.amount_nzd || 0), 0);
+  const budget = sum("Budget"), spent = sum("Actual cost"), revenue = sum("Revenue");
+  const referred = wl.filter(w => w.referred_by).length;
+  const byRel = {}; ppl.forEach(p => byRel[p.relationship] = (byRel[p.relationship] || 0) + 1);
+  const relMax = Math.max(1, ...Object.values(byRel));
+  const byCountry = {}; wl.forEach(w => byCountry[w.country || "Unknown"] = (byCountry[w.country || "Unknown"] || 0) + 1);
+  const cMax = Math.max(1, ...Object.values(byCountry));
+  const phases = {}; tasks.forEach(t => { const p = t.phase || "Backlog"; phases[p] ||= [0, 0]; phases[p][1]++; if (t.status === "Done") phases[p][0]++; });
+  const bars = (obj, max, fmt = v => v) => Object.entries(obj).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+    `<div class="barrow"><span>${esc(k)}</span><div class="bartrack"><div class="barfill" style="width:${(v / max) * 100}%"></div></div><span class="n">${fmt(v)}</span></div>`).join("") || `<p class="muted">No signups yet.</p>`;
+
+  document.getElementById("ov").innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><b>${wl.length}</b><span>waitlist signups of ${WAITLIST_TARGET} by 8 Nov</span></div>
+      <div class="kpi"><b>${ppl.length}</b><span>people added (future orders)</span></div>
+      <div class="kpi"><b>${referred}</b><span>joined via referral</span></div>
+      <div class="kpi"><b>${Math.max(0, daysTo(PRESALE))}</b><span>days to pre-sale (9 Nov)</span></div>
+      <div class="kpi"><b>${Math.max(0, daysTo(LAST_ORDER))}</b><span>days to last order date</span></div>
+      <div class="kpi ${overdue.length ? "alert" : ""}"><b>${done}/${tasks.length}</b><span>tasks done${overdue.length ? `, ${overdue.length} overdue` : ""}</span></div>
+      <div class="kpi"><b>${nzd(spent)}</b><span>spent of ${nzd(budget)} budget</span></div>
+      <div class="kpi"><b>${nzd(revenue)}</b><span>revenue</span></div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h2>Due in the next 7 days</h2>${thisWeek.length ? `<div class="bars">${thisWeek.map(t => `<div class="barrow" style="grid-template-columns:70px 1fr 110px"><span class="muted">${fmtDate(t.due_date)}</span><span>${esc(t.title)}</span><span class="n">${esc(t.owner || "")}</span></div>`).join("")}</div>` : `<p class="muted">Nothing due this week.</p>`}
+        ${overdue.length ? `<h2 style="margin-top:20px;color:var(--crimson)">Overdue</h2><div class="bars">${overdue.map(t => `<div class="barrow" style="grid-template-columns:70px 1fr 110px"><span class="overdue">${fmtDate(t.due_date)}</span><span>${esc(t.title)}</span><span class="n">${esc(t.owner || "")}</span></div>`).join("")}</div>` : ""}</div>
+      <div class="panel"><h2>Progress by phase</h2><div class="bars">${Object.entries(phases).sort().map(([p, [d, n]]) => `<div class="barrow"><span>${esc(p)}</span><div class="bartrack"><div class="barfill" style="width:${(d / n) * 100}%"></div></div><span class="n">${d}/${n}</span></div>`).join("")}</div></div>
+      <div class="panel"><h2>Who they're buying for</h2><div class="bars">${bars(byRel, relMax)}</div><p class="note" style="margin-top:12px">Use this to size first stock orders per box.</p></div>
+      <div class="panel"><h2>Where signups live</h2><div class="bars">${bars(byCountry, cMax)}</div></div>
+    </div>`;
+}
+
+async function tasks() { await listView("hq_tasks", "Tasks", "Every task in the Christmas plan, grouped by phase. Click a row to edit."); }
+
+async function timeline() {
+  main().innerHTML = `<h1>Timeline</h1><p class="sub">Christmas plan by phase. The yellow line is today.</p><div id="tlw">Loading…</div>`;
+  const rows = (await load("hq_tasks")).filter(t => t.start_date || t.due_date);
+  if (!rows.length) { document.getElementById("tlw").innerHTML = `<div class="panel empty">Add dates to tasks to see them here.</div>`; return; }
+  const t = d => new Date(d + "T00:00:00").getTime();
+  const lo = Math.min(...rows.map(r => t(r.start_date || r.due_date)));
+  const hi = Math.max(...rows.map(r => t(r.due_date || r.start_date))) + 864e5;
+  const X = d => ((t(d) - lo) / (hi - lo)) * 100;
+  const weeks = []; for (let w = lo; w <= hi; w += 7 * 864e5) weeks.push(new Date(w).toISOString().slice(0, 10));
+  const sorted = rows.sort((a, b) => (a.phase || "zz").localeCompare(b.phase || "zz") || (a.start_date || a.due_date).localeCompare(b.start_date || b.due_date));
+  let html = "", last;
+  for (const r of sorted) {
+    if (r.phase !== last) { last = r.phase; html += `<div class="tl-row phase"><div class="tl-name">${esc(r.phase || "No phase")}</div><div></div></div>`; }
+    const s = r.start_date || r.due_date, e = r.due_date || r.start_date;
+    const cls = r.status === "Done" ? "done" : r.status === "Blocked" ? "blocked" : "";
+    html += `<div class="tl-row"><div class="tl-name" title="${esc(r.title)}">${esc(r.title)} <span class="muted">· ${esc(r.owner || "")}</span></div>
+      <div class="tl-track"><div class="tl-bar ${cls}" style="left:${X(s)}%;width:calc(${X(e) - X(s)}% + 8px)" title="${fmtDate(s)} to ${fmtDate(e)}"></div></div></div>`;
+  }
+  const todayPct = X(today());
+  document.getElementById("tlw").innerHTML = `<div class="tl"><div class="tl-inner">
+    <div class="tl-head">${weeks.map(w => `<span style="left:${X(w)}%">${fmtDate(w)}</span>`).join("")}</div>
+    <div style="position:relative">${html}${todayPct >= 0 && todayPct <= 100 ? `<div class="tl-today" style="left:calc(300px + (100% - 300px) * ${todayPct / 100})"></div>` : ""}</div>
+  </div></div>`;
+}
+
+async function waitlist() {
+  main().innerHTML = `<h1>Waitlist</h1><p class="sub">Everyone who's signed up and the people they're buying for.</p><div id="wl">Loading…</div>`;
+  const [{ data: wl, error }, { data: ppl }] = await Promise.all([
+    sb.from("waitlist").select("*").order("created_at", { ascending: false }),
+    sb.from("waitlist_people").select("*")
+  ]);
+  if (error) { document.getElementById("wl").textContent = error.message; return; }
+  const byW = {}; (ppl || []).forEach(p => (byW[p.waitlist_id] ||= []).push(p));
+  const refCounts = {}; wl.forEach(w => w.referred_by && (refCounts[w.referred_by] = (refCounts[w.referred_by] || 0) + 1));
+  document.getElementById("wl").innerHTML = `
+    <div class="toolbar"><span class="muted">${wl.length} signups, ${(ppl || []).length} people</span><span class="spacer"></span><button class="btn ghost" id="csv">Download CSV</button></div>
+    <div class="tablewrap"><table><thead><tr><th>Joined</th><th>Email</th><th>Name</th><th>Country</th><th>Buying for</th><th>Referrals</th><th>Source</th></tr></thead><tbody>
+    ${wl.map(w => `<tr style="cursor:default"><td style="white-space:nowrap">${new Date(w.created_at).toLocaleDateString("en-NZ", { day: "numeric", month: "short" })}</td><td>${esc(w.email)}</td><td>${esc(w.first_name)}</td><td>${esc(w.country)}</td>
+      <td>${(byW[w.id] || []).map(p => `${esc(p.first_name)} <span class="muted">(${esc(p.relationship)}${p.nz_city ? ", " + esc(p.nz_city) : ""}${p.birthday_month ? ", bday " + p.birthday_day + "/" + p.birthday_month : ""})</span>`).join("<br>")}</td>
+      <td class="num">${refCounts[w.referral_code] || 0}</td><td class="muted">${esc(w.utm_source || w.source || "")}</td></tr>`).join("") || `<tr><td colspan="7" class="empty">No signups yet. Share the waitlist link to get the first one.</td></tr>`}
+    </tbody></table></div>`;
+  document.getElementById("csv").onclick = () => {
+    const rows = [["joined", "email", "first_name", "country", "referral_code", "referred_by", "person", "relationship", "nz_city", "birthday_day", "birthday_month"]];
+    wl.forEach(w => (byW[w.id] || [{}]).forEach(p => rows.push([w.created_at, w.email, w.first_name, w.country, w.referral_code, w.referred_by, p.first_name, p.relationship, p.nz_city, p.birthday_day, p.birthday_month])));
+    const csv = rows.map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `farbird-waitlist-${today()}.csv`; a.click();
+  };
+}
+
+async function boxes() { await listView("hq_boxes", "Boxes", "The box range, prices and cost of goods. Target at least NZ$20 gross profit per box."); }
+async function suppliers() { await listView("hq_suppliers", "Suppliers", "NZ and China suppliers from first contact to approved."); }
+
+async function finance() {
+  main().innerHTML = `<h1>Financials</h1><p class="sub">Budget, actual spend and revenue in NZD.</p><div id="fk"></div><div id="tbl"></div>`;
+  const rows = await load("hq_finance");
+  const by = (kind) => { const o = {}; rows.filter(r => r.kind === kind).forEach(r => o[r.category] = (o[r.category] || 0) + Number(r.amount_nzd)); return o; };
+  const B = by("Budget"), A = by("Actual cost"), R = by("Revenue");
+  const tot = o => Object.values(o).reduce((s, v) => s + v, 0);
+  const cats = [...new Set([...Object.keys(B), ...Object.keys(A)])].sort();
+  document.getElementById("fk").innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><b>${nzd(tot(B))}</b><span>budget</span></div>
+      <div class="kpi ${tot(A) > tot(B) ? "alert" : ""}"><b>${nzd(tot(A))}</b><span>spent</span></div>
+      <div class="kpi"><b>${nzd(tot(R))}</b><span>revenue</span></div>
+      <div class="kpi ${tot(R) - tot(A) < 0 ? "alert" : ""}"><b>${nzd(tot(R) - tot(A))}</b><span>net to date</span></div>
+    </div>
+    <div class="panel"><h2>Budget vs spent by category</h2><div class="tablewrap" style="border:0"><table><thead><tr><th>Category</th><th class="num">Budget</th><th class="num">Spent</th><th class="num">Left</th></tr></thead><tbody>
+      ${cats.map(c => `<tr style="cursor:default"><td>${esc(c)}</td><td class="num">${nzd(B[c] || 0)}</td><td class="num">${nzd(A[c] || 0)}</td><td class="num ${(B[c] || 0) - (A[c] || 0) < 0 ? "overdue" : ""}">${nzd((B[c] || 0) - (A[c] || 0))}</td></tr>`).join("")}
+    </tbody></table></div></div><h2>All lines</h2>`;
+  drawList("hq_finance", rows);
+}
+
+async function marketing() {
+  main().innerHTML = `<h1>Marketing</h1><p class="sub">Channels, targets and results. ICP, brand and growth loops live on the Plan page.</p><div id="tbl"></div><div id="mkplan" class="doc" style="margin-top:24px"></div>`;
+  drawList("hq_channels", await load("hq_channels"));
+  const { data } = await sb.from("hq_plan").select("*").in("key", ["icp", "brand", "growth", "gamification"]).order("sort");
+  document.getElementById("mkplan").innerHTML = (data || []).map(s => `<section><h2>${esc(s.title)}</h2><div class="md">${md(s.body)}</div></section>`).join("");
+}
+
+async function plan() {
+  main().innerHTML = `<h1>Plan</h1><p class="sub">The living business plan. Edit any section; changes save for the whole team.</p><div id="doc" class="doc">Loading…</div>`;
+  const { data, error } = await sb.from("hq_plan").select("*").order("sort");
+  if (error) { document.getElementById("doc").textContent = error.message; return; }
+  const doc = document.getElementById("doc");
+  doc.innerHTML = data.map(s => `<section data-key="${esc(s.key)}"><header><h2>${esc(s.title)}</h2><button class="btn ghost" data-edit>Edit</button></header>
+    <div class="md">${md(s.body)}</div><p class="note">Updated ${new Date(s.updated_at).toLocaleDateString("en-NZ", { day: "numeric", month: "short" })}</p></section>`).join("") +
+    `<button class="btn ghost" id="addSec">Add section</button>`;
+  doc.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => {
+    const sec = b.closest("section"), s = data.find(x => x.key === sec.dataset.key);
+    sec.innerHTML = `<label class="note">Title<input id="st" value="${esc(s.title)}" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;margin:4px 0 10px;background:var(--bg)"></label>
+      <textarea class="mdedit" id="sb">${esc(s.body)}</textarea><p class="note">Markdown: **bold**, - bullets, | tables |.</p>
+      <div class="actions"><button class="btn" id="ss">Save</button><button class="btn ghost" id="sc">Cancel</button></div>`;
+    sec.querySelector("#sc").onclick = plan;
+    sec.querySelector("#ss").onclick = async () => {
+      const { error } = await sb.from("hq_plan").update({ title: sec.querySelector("#st").value, body: sec.querySelector("#sb").value }).eq("key", s.key);
+      if (error) alert("Didn't save: " + error.message); else plan();
+    };
+  });
+  document.getElementById("addSec").onclick = async () => {
+    const title = prompt("Section title"); if (!title) return;
+    const { error } = await sb.from("hq_plan").insert({ key: slug(title) + "-" + Date.now().toString(36), title, body: "", sort: data.length + 1 });
+    if (error) alert(error.message); else plan();
+  };
+}
+
+boot();
+</script>
+</body>
+</html>
