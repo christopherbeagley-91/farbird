@@ -6,6 +6,7 @@ import { forwardAuth } from "./auth.ts";
 import { logSync, markIntegration } from "./log.ts";
 import { missingSecrets } from "./secrets.ts";
 import { fetchWithRetry } from "./retry.ts";
+import { REGISTRY } from "./registry.ts";
 
 export type Integration = {
   key: string;
@@ -20,7 +21,11 @@ export type Integration = {
 export type RunResult = { key: string; outcome: "ok" | "error" | "skipped"; message: string };
 
 export async function runConnector(db: Db, req: Request, integ: Integration, trigger: "manual" | "schedule"): Promise<RunResult> {
-  const missing = missingSecrets(integ.required_secrets ?? []);
+  const tool = REGISTRY.find((t) => t.key === integ.key);
+  if (tool?.kind === "manual") {
+    return { key: integ.key, outcome: "skipped", message: `${integ.name} is used by hand; nothing to sync.` };
+  }
+  const missing = missingSecrets(tool?.required_secrets ?? integ.required_secrets ?? []);
   if (missing.length) {
     const message = `Add secrets first: ${missing.join(", ")}`;
     await logSync(db, { integration_key: integ.key, direction: "internal", status: "skipped", message });

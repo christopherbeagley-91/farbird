@@ -41,7 +41,7 @@ Edge Functions (Deno, supabase/functions/):
 HQ "Integrations" view: a card per provider with status, last sync, last error, a "Sync now" button (invokes the edge function as the signed-in user; the function re-checks is_team), and the recent sync_log rows. Never display secret values; link to the Supabase dashboard to set them.
 
 PHASE 3 — CONNECTORS (each one: migration if needed, edge functions, HQ wiring, a row in integrations, a README section listing the secrets it needs)
-1. ClickUp (project management, two-way):
+1. ClickUp (project management, two-way): DONE (clickup-sync, clickup-webhook; token-only setup, webhook secret auto-stored in Vault).
    - Out: create/update the matching ClickUp task when an hq_task changes (name, dates, status mapping To do/In progress/Blocked/Done, owner tag, phase tag, description link back to HQ). List chosen by workstream (folder "Farbird — Christmas 2026", lists 1-7).
    - In: ClickUp webhook (taskStatusUpdated, taskDueDateUpdated, taskUpdated, taskCreated) updates hq_tasks. Last-write-wins on updated_at; log conflicts to sync_log.
    - Secrets: CLICKUP_API_TOKEN, CLICKUP_WEBHOOK_SECRET. Config: workspace_id, folder_id, list map.

@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.integrations-cron]
 verify_jwt = false
+
+[functions.clickup-sync]
+verify_jwt = false
+
+[functions.clickup-webhook]
+verify_jwt = false

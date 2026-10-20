@@ -393,6 +393,7 @@ function editRow(table, row) {
     }
     if (res.error) { document.getElementById("dlgErr").textContent = "Didn't save: " + res.error.message; return; }
     dlg.close(); go(state.view);
+    if (table === "hq_tasks") pushTasksToClickup();
   };
   dlg.showModal();
 }
@@ -517,8 +518,45 @@ async function finance() {
     </div>
     <div class="panel"><h2>Budget vs spent by category</h2><div class="tablewrap" style="border:0"><table><thead><tr><th>Category</th><th class="num">Budget</th><th class="num">Spent</th><th class="num">Left</th></tr></thead><tbody>
       ${cats.map(c => `<tr style="cursor:default"><td>${esc(c)}</td><td class="num">${nzd(B[c] || 0)}</td><td class="num">${nzd(A[c] || 0)}</td><td class="num ${(B[c] || 0) - (A[c] || 0) < 0 ? "overdue" : ""}">${nzd((B[c] || 0) - (A[c] || 0))}</td></tr>`).join("")}
-    </tbody></table></div></div><h2>All lines</h2>`;
+    </tbody></table></div></div>
+    <div class="panel" id="be"></div>
+    <h2>All lines</h2>`;
   drawList("hq_finance", rows);
+  drawBreakeven(tot(B), tot(A), tot(R));
+}
+
+async function drawBreakeven(budget, spent, revenue) {
+  const { data: boxes } = await sb.from("hq_boxes").select("price_nzd, cogs_nzd, status");
+  const priced = (boxes || []).filter(b => b.price_nzd && b.cogs_nzd);
+  const avgGp = priced.length ? priced.reduce((s, b) => s + (b.price_nzd - b.cogs_nzd), 0) / priced.length : 25;
+  const avgPrice = (boxes || []).filter(b => b.price_nzd).reduce((s, b, _, a) => s + b.price_nzd / a.length, 0) || 89;
+  const el = document.getElementById("be");
+  const saved = { gp: Number(pref.get("be_gp")) || Math.round(avgGp * 100) / 100, per: Number(pref.get("be_per")) || 1.6 };
+  el.innerHTML = `<h2>Breakeven</h2>
+    <p class="note" style="margin:0 0 12px">Costs to cover = the larger of budget or actual spend. ${priced.length ? `Gross profit starts from your ${priced.length} costed box${priced.length > 1 ? "es" : ""}.` : "Add COGS to boxes to replace the NZ$25 starting estimate."}</p>
+    <div class="toolbar">
+      <label class="note">Gross profit per box (NZ$) <input id="beGp" type="number" step="0.5" min="1" value="${saved.gp}" style="width:90px"></label>
+      <label class="note">Boxes per customer <input id="bePer" type="number" step="0.1" min="1" value="${saved.per}" style="width:70px"></label>
+    </div>
+    <div class="kpis" id="beOut" style="margin:0"></div>`;
+  const calc = () => {
+    const gp = Math.max(1, Number(document.getElementById("beGp").value) || 1);
+    const per = Math.max(1, Number(document.getElementById("bePer").value) || 1);
+    pref.set("be_gp", gp); pref.set("be_per", per);
+    const cost = Math.max(budget, spent);
+    const boxesNeeded = Math.ceil(cost / gp);
+    const customers = Math.ceil(boxesNeeded / per);
+    const soldEst = Math.round(revenue / avgPrice);
+    const pct = Math.min(100, Math.round((soldEst / boxesNeeded) * 100));
+    document.getElementById("beOut").innerHTML = `
+      <div class="kpi"><b>${nzd(cost)}</b><span>costs to cover</span></div>
+      <div class="kpi"><b>${boxesNeeded}</b><span>boxes to break even</span></div>
+      <div class="kpi"><b>${customers}</b><span>customers at ${per} boxes each</span></div>
+      <div class="kpi"><b>${pct}%</b><span>of the way (about ${soldEst} boxes sold so far)</span></div>`;
+  };
+  document.getElementById("beGp").oninput = calc;
+  document.getElementById("bePer").oninput = calc;
+  calc();
 }
 
 async function marketing() {
@@ -555,6 +593,12 @@ async function plan() {
 }
 
 /* ---------- Integrations ---------- */
+async function pushTasksToClickup() {
+  const { data } = await sb.from("integrations").select("status").eq("key", "clickup").maybeSingle();
+  if (data?.status !== "connected") return;
+  try { await sb.functions.invoke("integrations-status", { body: { action: "sync", key: "clickup" } }); } catch {}
+}
+
 const SECRETS_URL = "https://supabase.com/dashboard/project/fmrabsrgdwqhyxcjnfgt/functions/secrets";
 const PHASES = ["Now", "Before pre-sale", "After Christmas", "Later"];
 const statusLabel = s => ({ connected: "Connected", not_connected: "Not connected", error: "Error", paused: "Paused" })[s] || s;
@@ -579,6 +623,7 @@ async function integrations() {
       <a class="btn ghost" href="${SECRETS_URL}" target="_blank" rel="noopener" style="text-decoration:none">Add secrets in Supabase</a>
       <span class="spacer"></span><span class="muted" id="intMsg" role="status"></span>
     </div>
+    <p class="note" id="intSummary" style="margin:0 0 16px"></p>
     <div id="intCards">Loading…</div>
     <h2 style="margin-top:8px">Recent activity</h2><div id="intLog"></div>`;
   document.getElementById("intCheck").onclick = () => drawIntegrations(true);
@@ -624,6 +669,14 @@ async function drawIntegrations(live) {
   </tbody></table></div>`;
 
   document.querySelectorAll("[data-sync]").forEach(b => b.onclick = () => syncNow(b.dataset.sync, b));
+  document.querySelectorAll("[data-setup]").forEach(cb => cb.onchange = async () => {
+    const { error } = await sb.from("integrations").update({ status: cb.checked ? "connected" : "not_connected" }).eq("key", cb.dataset.setup);
+    msg.textContent = error ? "Didn't save: " + error.message : `${cb.dataset.name} marked ${cb.checked ? "set up" : "not set up"}.`;
+    if (!error) drawIntegrations(false);
+  });
+  const monthly = tools.reduce((sum, t) => sum + Number(t.config?.monthly_cost_nzd || 0), 0);
+  const setUp = tools.filter(t => t.status === "connected").length;
+  document.getElementById("intSummary").innerHTML = `${setUp} of ${tools.length} tools set up · fixed running cost about ${nzd(monthly)} a month, plus Stripe fees per sale`;
   document.querySelectorAll("[data-enable]").forEach(cb => cb.onchange = async () => {
     const { error } = await sb.from("integrations").update({ enabled: cb.checked }).eq("key", cb.dataset.enable);
     msg.textContent = error ? "Didn't save: " + error.message : `${cb.checked ? "Scheduled syncing on" : "Scheduled syncing off"} for ${cb.dataset.name}.`;
@@ -636,15 +689,23 @@ function card(t, secretsKnown, logs) {
     ? `<ul class="secrets" aria-label="Secrets needed">${req.map(n => `<li class="${secretsKnown && t.secrets?.[n] ? "set" : ""}">${esc(n)}${secretsKnown ? (t.secrets?.[n] ? "" : " (not set)") : ""}</li>`).join("")}</ul>`
     : `<p>No secrets needed.</p>`;
   const last = logs[0];
+  const c = t.config || {};
+  const manual = c.kind === "manual";
+  const open = c.account_url ? `<a class="btn ghost" href="${esc(c.account_url)}" target="_blank" rel="noopener" style="text-decoration:none">Open</a>` : "";
+  const label = manual ? (t.status === "connected" ? "Set up" : "Not set up") : statusLabel(t.status);
   return `<article class="icard">
-    <header><div><h3>${esc(t.name)}</h3><span class="cat">${esc(t.category)}</span></div><span class="pill s-${slug(t.status)}">${esc(statusLabel(t.status))}</span></header>
+    <header><div><h3>${esc(t.name)}</h3><span class="cat">${esc(t.category)}</span></div><span class="pill s-${slug(t.status)}">${esc(label)}</span></header>
     <p>${esc(t.description || "")}</p>
-    ${secrets}
-    <div class="meta">Last sync: ${when(t.last_sync_at)} · every ${t.sync_every_minutes >= 1440 ? "day" : t.sync_every_minutes + " min"}</div>
-    ${t.last_error ? `<div class="err">${esc(t.last_error)}</div>` : last ? `<div class="meta">Latest: ${esc(last.message || last.status)}</div>` : ""}
+    <div class="meta">Owner: ${esc(c.owner || "Unassigned")} · ${esc(c.cost_note || "Free")}</div>
+    ${manual ? "" : secrets}
+    ${manual ? "" : `<div class="meta">Last sync: ${when(t.last_sync_at)} · every ${t.sync_every_minutes >= 1440 ? "day" : t.sync_every_minutes + " min"}</div>`}
+    ${t.last_error ? `<div class="err">${esc(t.last_error)}</div>` : !manual && last ? `<div class="meta">Latest: ${esc(last.message || last.status)}</div>` : ""}
     <footer>
-      <button class="btn" data-sync="${esc(t.key)}">Sync now</button>
-      <label class="toggle"><input type="checkbox" data-enable="${esc(t.key)}" data-name="${esc(t.name)}" ${t.enabled ? "checked" : ""}> Scheduled sync</label>
+      ${manual
+        ? `<label class="toggle"><input type="checkbox" data-setup="${esc(t.key)}" data-name="${esc(t.name)}" ${t.status === "connected" ? "checked" : ""}> Account set up</label>`
+        : `<button class="btn" data-sync="${esc(t.key)}">Sync now</button>
+           <label class="toggle"><input type="checkbox" data-enable="${esc(t.key)}" data-name="${esc(t.name)}" ${t.enabled ? "checked" : ""}> Scheduled sync</label>`}
+      <span class="spacer"></span>${open}
     </footer>
   </article>`;
 }

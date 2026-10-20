@@ -10,6 +10,7 @@ import { secretStatus, missingSecrets } from "../_shared/secrets.ts";
 import { logSync, upsertRef, findByExternalId } from "../_shared/log.ts";
 import { hmac, verifyHmac, recordWebhook, finishWebhook } from "../_shared/webhook.ts";
 import { runConnector, type Integration } from "../_shared/dispatch.ts";
+import { REGISTRY, rowFor } from "../_shared/registry.ts";
 
 type Body = { action?: string; key?: string };
 
@@ -45,7 +46,39 @@ Deno.serve(async (req) => {
   }
 });
 
+/** JSON with sorted keys, so Postgres's jsonb key order doesn't count as a change. */
+function stable(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(stable).join(",")}]`;
+  if (v && typeof v === "object") return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stable((v as Record<string, unknown>)[k])}`).join(",")}}`;
+  return JSON.stringify(v);
+}
+
+/** Makes public.integrations match the tool list declared in _shared/registry.ts. */
+async function applyRegistry(db: ReturnType<typeof admin>) {
+  const { data: rows, error } = await db.from("integrations").select("*");
+  if (error) throw new Error(error.message);
+  const byKey = new Map((rows ?? []).map((r) => [r.key, r]));
+  for (const tool of REGISTRY) {
+    const existing = byKey.get(tool.key);
+    const want = rowFor(tool, existing);
+    if (!existing) {
+      const { error: insErr } = await db.from("integrations").insert({ ...want, status: "not_connected", enabled: false });
+      if (insErr) console.error("registry insert failed", tool.key, insErr.message);
+      continue;
+    }
+    const changed = (["name", "category", "description", "phase", "sync_every_minutes", "sort"] as const)
+      .some((k) => existing[k] !== want[k])
+      || stable(existing.required_secrets ?? []) !== stable(want.required_secrets)
+      || stable(existing.config ?? {}) !== stable(want.config);
+    if (changed) {
+      const { error: upErr } = await db.from("integrations").update(want).eq("key", tool.key);
+      if (upErr) console.error("registry update failed", tool.key, upErr.message);
+    }
+  }
+}
+
 async function status(db: ReturnType<typeof admin>) {
+  await applyRegistry(db);
   const { data, error } = await db.from("integrations").select("*").order("sort");
   if (error) throw new Error(error.message);
   const out = [];
@@ -55,7 +88,7 @@ async function status(db: ReturnType<typeof admin>) {
     // Status follows the secrets unless a person paused it or the last sync failed.
     // Tools with no secrets only become connected after their connector syncs successfully.
     let next = integ.status;
-    const needsKeys = (integ.required_secrets ?? []).length > 0;
+    const needsKeys = (integ.required_secrets ?? []).length > 0 && integ.config?.kind !== "manual";
     if (integ.key !== "system" && integ.status !== "paused" && needsKeys) {
       if (missing.length) next = "not_connected";
       else if (integ.status === "not_connected") next = "connected";

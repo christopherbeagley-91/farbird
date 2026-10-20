@@ -26,6 +26,8 @@ Christmas 2026 test. Waitlist from 19 Oct, pre-sale 9 Nov, last order date Sat 1
 ## Rules
 - Integrations: third-party keys only in Supabase Edge Function secrets, never in HTML. Connectors are `<key>-sync` / `<key>-webhook` functions built on `_shared/`, deployed with verify_jwt = false (they call `authorize()`). Map records via `external_refs`, log via `logSync`, store webhooks via `recordWebhook` before processing.
 - Never add an `anon` select policy on `waitlist` or `waitlist_people`. Public writes go through `join_waitlist()` only.
+- Tool list lives in `supabase/functions/_shared/registry.ts`; edit there, not in the `integrations` table. `kind: "manual"` tools have no sync function.
+- Migrations are additive only (the Supabase MCP blocks ALTER/DELETE): new tables or functions, not column changes.
 - New HQ tables: enable RLS and add the `"team all"` policy using `public.is_team()`, plus the `touch` trigger.
 - Add a teammate: `insert into public.team_members (email, name, role) values (...)`.
 - Keep the waitlist page a single self-contained HTML file. Mobile-first; test at 390px.
