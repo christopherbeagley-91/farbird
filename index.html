@@ -3,14 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Farbird — Christmas gifts home, sorted</title>
-<meta name="description" content="Personalised NZ gift boxes for the people back home, sent from wherever you are. Join the waitlist for Christmas 2026.">
-<meta property="og:title" content="Farbird — Mum's Christmas, handled from anywhere">
-<meta property="og:description" content="Personalised NZ gift boxes for Kiwis abroad. Join the Christmas waitlist.">
+<title>Farbird — NZ gift boxes for Kiwis who leave it late</title>
+<meta name="description" content="Personalised NZ gift boxes with their name printed on the sleeve, packed in Auckland and delivered anywhere in NZ. Join the Christmas 2026 waitlist.">
+<meta property="og:title" content="Mum will think you planned this">
+<meta property="og:description" content="NZ gift boxes with her name on the sleeve. For Kiwis abroad who leave it late.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* Packing-table layout: copy and form on the left, the printed box on the right, overlapping its band. Tokens from the Farbird brand system. */
   :root {
     --sky: #E4EEF2;
     --sky-deep: #CFDFE6;
@@ -22,6 +23,8 @@
     --kowhai: #F1C232;
     --paper: #FBFCFD;
     --line: #B9CCD5;
+    --line-strong: #6F8794;
+    --radius-0: 0px;
     --radius-sm: 6px;
     --radius-lg: 18px;
     --display: "Bricolage Grotesque", Georgia, serif;
@@ -29,177 +32,154 @@
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
-  body {
-    margin: 0;
-    background: var(--sky);
-    color: var(--ink);
-    font: 17px/1.55 var(--body);
-  }
+  body { margin: 0; background: var(--sky); color: var(--ink); font: 17px/1.55 var(--body); }
   a { color: inherit; }
   :focus-visible { outline: 3px solid var(--kowhai); outline-offset: 2px; }
 
-  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+  .wrap { max-width: 1160px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
 
   /* Top bar */
-  .bar { display: flex; align-items: center; justify-content: space-between; padding-top: 18px; padding-bottom: 18px; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 18px; padding-bottom: 18px; }
   .logo { font: 800 24px/1 var(--display); letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; text-decoration: none; }
   .logo svg { width: 30px; height: 30px; }
-  .cutoff { font-size: 14px; color: var(--ink-soft); text-align: right; }
+  .cutoff { font-size: 14px; color: var(--ink-soft); text-align: right; margin: 0; }
   .cutoff strong { color: var(--crimson); font-weight: 600; }
 
   /* Hero */
-  .hero { display: grid; grid-template-columns: 1.05fr 0.95fr; grid-template-areas: "intro stage" "form stage"; column-gap: 48px; align-items: start; padding-top: 28px; padding-bottom: 72px; }
+  .hero { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); grid-template-areas: "intro stage" "form stage"; column-gap: 56px; align-items: start; padding-top: 24px; padding-bottom: 88px; }
   .intro { grid-area: intro; }
   .formwrap { grid-area: form; }
-  .stage { grid-area: stage; position: sticky; top: 24px; }
-  h1 {
-    font: 800 clamp(44px, 6.4vw, 82px)/0.95 var(--display);
-    letter-spacing: -0.035em;
-    margin: 0 0 20px;
-  }
-  .lede { font-size: 19px; max-width: 32em; color: var(--ink-soft); margin: 0 0 32px; }
+  .stage { grid-area: stage; position: sticky; top: 24px; padding-top: 12px; }
+  h1 { font: 800 clamp(44px, 6vw, 78px)/0.95 var(--display); letter-spacing: -0.035em; margin: 0 0 20px; text-wrap: balance; }
+  h1 .who { background: linear-gradient(transparent 62%, var(--kowhai) 62% 92%, transparent 92%); padding: 0 .04em; }
+  .lede { font-size: 19px; line-height: 1.5; max-width: 30em; color: var(--ink-soft); margin: 0 0 28px; }
 
-  /* The signature: live box sleeve */
+  /* The signature: a box with a printed sleeve */
   .box {
-    position: relative;
-    aspect-ratio: 1.15 / 1;
-    background: var(--paper);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 30px 60px -30px rgba(23, 34, 46, 0.45), inset 0 0 0 1px var(--line);
-    overflow: hidden;
+    position: relative; aspect-ratio: 1.12 / 1;
+    background: var(--paper); border-radius: 4px;
+    box-shadow: 0 34px 60px -32px rgba(23, 34, 46, 0.5), inset 0 0 0 1px var(--line);
+    transform: rotate(1.2deg);
   }
-  .box::before { /* tissue peeking */
-    content: ""; position: absolute; inset: 18px 18px auto 18px; height: 34%;
-    background: repeating-linear-gradient(115deg, #F6D9DD 0 14px, #F9E6E8 14px 28px);
-    border-radius: 10px;
+  .box::before { /* tissue peeking out of the box */
+    content: ""; position: absolute; inset: 16px 16px auto 16px; height: 36%;
+    background: repeating-linear-gradient(118deg, var(--paper) 0 13px, var(--sky-deep) 13px 26px);
   }
   .sleeve {
-    position: absolute; left: -2%; right: -2%; top: 42%; bottom: 14%;
-    background: var(--crimson);
-    color: var(--paper);
+    position: absolute; left: -5%; right: -3%; top: 44%; bottom: 13%;
+    background: var(--crimson); color: var(--paper); border-radius: var(--radius-0);
     display: flex; flex-direction: column; justify-content: center;
-    padding: 0 18% 0 9%;
-    transform: rotate(-2.5deg);
+    padding: 0 20% 0 9%; transform: rotate(-3.5deg);
   }
-  .sleeve-for { font: 800 clamp(40px, 6vw, 72px)/0.95 var(--display); letter-spacing: -0.03em; overflow-wrap: anywhere; }
-  .sleeve-from { font-size: 15px; margin-top: 10px; opacity: 0.92; }
-  .sleeve-mark { position: absolute; right: 7%; bottom: 14%; width: 46px; opacity: 0.9; }
+  .sleeve-for { font: 800 clamp(42px, 6.4vw, 84px)/0.92 var(--display); letter-spacing: -0.03em; overflow-wrap: anywhere; }
+  .sleeve-from { font-size: 15px; margin-top: 10px; }
+  .sleeve-mark { position: absolute; right: 7%; bottom: 14%; width: 46px; }
   .tag {
-    position: absolute; right: -10px; top: -6px;
-    background: var(--kowhai); color: var(--ink);
-    font: 600 14px/1.25 var(--body);
-    padding: 12px 14px; border-radius: 50%;
-    width: 112px; height: 112px; display: grid; place-items: center; text-align: center;
-    transform: rotate(10deg);
+    position: absolute; right: -14px; top: -10px; z-index: 2;
+    background: var(--kowhai); color: var(--ink); font: 600 14px/1.2 var(--body);
+    padding: 14px; border-radius: 50%; width: 112px; height: 112px;
+    display: grid; place-items: center; text-align: center; transform: rotate(12deg);
   }
-  .stage-note { font-size: 14px; color: var(--ink-soft); margin-top: 18px; }
+  .stage-note { font-size: 14px; color: var(--ink-soft); margin: 26px 0 0; max-width: 34em; }
 
   /* Form */
-  .card {
-    background: var(--paper);
-    border-radius: var(--radius-lg);
-    padding: 28px;
-    box-shadow: inset 0 0 0 1px var(--line);
-  }
+  .card { background: var(--paper); border-radius: var(--radius-lg); padding: 28px; box-shadow: inset 0 0 0 1px var(--line); }
   .card h2 { font: 700 24px/1.15 var(--display); letter-spacing: -0.02em; margin: 0 0 4px; }
   .card .hint { font-size: 15px; color: var(--ink-soft); margin: 0 0 20px; }
   fieldset { border: 0; padding: 0; margin: 0 0 20px; }
   legend { font: 600 15px/1.3 var(--body); margin-bottom: 10px; padding: 0; }
   .row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
   .row.three { grid-template-columns: 1.3fr 1fr 1fr; }
+  .row > * { min-width: 0; }
   label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
   input, select {
     width: 100%; font: 400 16px/1.3 var(--body); color: var(--ink);
-    background: #fff; border: 1px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
     padding: 11px 12px; min-height: 46px;
   }
-  input:focus, select:focus { border-color: var(--ink); outline: none; box-shadow: 0 0 0 3px rgba(241, 194, 50, 0.6); }
-  .person { padding: 16px; border-radius: 12px; background: var(--sky); margin-bottom: 12px; position: relative; }
-  .person + .person { margin-top: 0; }
-  .remove { position: absolute; right: 10px; top: 8px; background: none; border: 0; font: 500 14px var(--body); color: var(--ink-soft); cursor: pointer; padding: 6px; }
+  input::placeholder { color: var(--ink-soft); opacity: .7; }
+  input:focus, select:focus { border-color: var(--ink); outline: none; box-shadow: 0 0 0 3px var(--kowhai); }
+  .person { padding: 16px; border-radius: var(--radius-sm); background: var(--sky); margin-bottom: 12px; position: relative; }
+  .remove { position: absolute; right: 10px; top: 8px; background: none; border: 0; font: 500 14px var(--body); color: var(--ink-soft); cursor: pointer; padding: 6px; text-decoration: underline; }
   .bday { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
   .add {
-    background: none; border: 1px dashed var(--ink-soft); color: var(--ink);
-    border-radius: var(--radius-sm); padding: 10px 14px; font: 500 15px var(--body);
+    background: transparent; border: 1px solid var(--line-strong); color: var(--ink);
+    border-radius: var(--radius-sm); padding: 11px 14px; font: 500 15px var(--body);
     cursor: pointer; width: 100%; margin-top: 4px;
   }
-  .add:hover { border-style: solid; }
+  .add:hover { border-color: var(--ink); }
   .submit {
     width: 100%; margin-top: 8px; border: 0; border-radius: var(--radius-sm);
-    background: var(--ink); color: var(--paper);
-    font: 600 18px/1 var(--body); padding: 18px; cursor: pointer;
+    background: var(--ink); color: var(--paper); font: 600 18px/1 var(--body); padding: 18px; cursor: pointer;
   }
   .submit:hover { background: var(--crimson); }
   .submit[disabled] { opacity: 0.6; cursor: progress; }
   .fine { font-size: 13px; color: var(--ink-soft); margin: 12px 0 0; }
   .error { color: var(--crimson-dark); font-size: 15px; margin: 12px 0 0; min-height: 1em; }
+  .how { font-size: 16px; margin: 18px 4px 0; max-width: 34em; }
 
   /* Success */
   .done h2 { font-size: 30px; }
   .refbox { display: flex; gap: 8px; margin: 16px 0 8px; }
-  .refbox input { flex: 1; font-size: 15px; }
+  .refbox input { flex: 1; min-width: 0; font-size: 15px; }
   .copy { border: 0; background: var(--kowhai); color: var(--ink); font: 600 15px var(--body); padding: 0 18px; border-radius: var(--radius-sm); cursor: pointer; }
   .shares { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-  .shares a { font-size: 14px; font-weight: 500; text-decoration: none; padding: 8px 12px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line); }
-  .shares a:hover { box-shadow: inset 0 0 0 1px var(--ink); }
-  .stats { display: flex; gap: 24px; margin: 18px 0 4px; }
+  .shares a { font-size: 14px; font-weight: 500; text-decoration: none; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--line-strong); cursor: pointer; }
+  .shares a:hover { border-color: var(--ink); }
+  .stats { display: flex; gap: 28px; margin: 18px 0 4px; }
   .stats div { font-size: 14px; color: var(--ink-soft); }
   .stats b { display: block; font: 800 34px/1 var(--display); color: var(--ink); }
 
   /* Sections */
-  section.band { padding: 72px 0; }
+  section.band { padding-top: 80px; padding-bottom: 80px; }
   section.band.light { background: var(--paper); }
-  h3.section { font: 800 clamp(32px, 4vw, 48px)/1 var(--display); letter-spacing: -0.03em; margin: 0 0 32px; max-width: 18em; }
-  .steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; counter-reset: s; }
-  .steps li { counter-increment: s; }
-  .steps li::before { content: counter(s); display: block; font: 800 56px/1 var(--display); color: var(--crimson); margin-bottom: 8px; }
-  .steps h4 { font: 700 21px/1.2 var(--display); margin: 0 0 6px; }
-  .steps p { margin: 0; color: var(--ink-soft); }
+  h2.section { font: 800 clamp(32px, 4.2vw, 52px)/1 var(--display); letter-spacing: -0.03em; margin: 0; max-width: 16em; text-wrap: balance; }
+  .sub { color: var(--ink-soft); margin: 14px 0 0; max-width: 32em; }
 
-  .boxes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
-  .mini {
-    background: var(--paper); border-radius: 14px; padding: 76px 16px 20px; position: relative; overflow: hidden;
-    box-shadow: inset 0 0 0 1px var(--line);
-  }
-  .mini .band-strip { position: absolute; left: -10%; right: -10%; top: 22px; height: 30px; transform: rotate(-3deg); }
-  .mini h4 { font: 800 22px/1.05 var(--display); margin: 0 0 6px; letter-spacing: -0.02em; }
-  .mini p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+  /* Boxes: a list, like a packing slip */
+  .boxes-wrap { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 56px; align-items: start; }
+  .boxlist { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+  .boxlist li { display: grid; grid-template-columns: 14px minmax(0, 11em) minmax(0, 1fr); gap: 16px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .boxlist .swatch { width: 14px; height: 14px; align-self: center; }
+  .boxlist h3 { font: 800 26px/1.05 var(--display); letter-spacing: -0.02em; margin: 0; }
+  .boxlist p { margin: 0; color: var(--ink-soft); }
+  .price { margin: 18px 0 0; font-size: 15px; color: var(--ink-soft); }
+  .price strong { color: var(--ink); }
 
-  .dates { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
-  .datelist { list-style: none; margin: 0; padding: 0; }
-  .datelist li { display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .dates { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: start; }
+  .datelist { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+  .datelist li { display: flex; justify-content: space-between; gap: 16px; padding: 15px 0; border-bottom: 1px solid var(--line); }
   .datelist li span:last-child { color: var(--ink-soft); text-align: right; }
 
-  .faq { max-width: 760px; }
-  details { border-bottom: 1px solid var(--line); padding: 16px 0; }
-  summary { font: 600 18px/1.3 var(--body); cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
-  summary::-webkit-details-marker { display: none; }
-  summary::after { content: "+"; font: 400 24px/1 var(--display); }
-  details[open] summary::after { content: "–"; }
-  details p { color: var(--ink-soft); margin: 10px 0 0; max-width: 40em; }
+  .faq { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 56px; align-items: start; }
+  .qa { margin: 0; border-top: 2px solid var(--ink); }
+  .qa div { padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .qa dt { font: 600 18px/1.3 var(--body); margin: 0 0 6px; }
+  .qa dd { margin: 0; color: var(--ink-soft); max-width: 38em; }
 
-  footer { padding: 40px 0 56px; font-size: 14px; color: var(--ink-soft); }
+  footer { padding-top: 40px; padding-bottom: 56px; font-size: 14px; color: var(--ink-soft); }
   footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  footer nav { display: flex; gap: 18px; flex-wrap: wrap; }
 
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   @media (max-width: 900px) {
-    .hero { grid-template-columns: 1fr; grid-template-areas: "intro" "stage" "form"; row-gap: 8px; padding-top: 8px; }
-    .stage { position: relative; top: 0; max-width: 460px; margin-bottom: 28px; }
-    .tag { width: 92px; height: 92px; font-size: 12px; right: -4px; }
-    .boxes { grid-template-columns: repeat(2, 1fr); }
-    .steps { grid-template-columns: 1fr; gap: 24px; }
-    .dates { grid-template-columns: 1fr; gap: 24px; }
+    .hero { grid-template-columns: minmax(0, 1fr); grid-template-areas: "intro" "stage" "form"; row-gap: 8px; padding-top: 8px; padding-bottom: 64px; }
+    .stage { position: relative; top: 0; margin: 4px 6px 36px; }
+    .tag { width: 92px; height: 92px; font-size: 12px; right: -6px; }
+    .boxes-wrap, .dates, .faq { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+    section.band { padding-top: 56px; padding-bottom: 56px; }
   }
   @media (max-width: 520px) {
     body { font-size: 16px; }
     .row, .row.three { grid-template-columns: 1fr; }
     .card { padding: 20px; }
-    .cutoff { display: none; }
-    .boxes .mini:last-child { grid-column: span 2; }
+    .cutoff { font-size: 13px; max-width: 13em; }
+    .boxlist li { grid-template-columns: 14px minmax(0, 1fr); row-gap: 4px; }
+    .boxlist li p { grid-column: 2; }
   }
   @media (prefers-reduced-motion: no-preference) {
-    .sleeve-for { transition: opacity .2s; }
+    .sleeve-for, h1 .who { transition: opacity .2s; }
   }
 </style>
 </head>
@@ -216,8 +196,8 @@
 <main>
   <div class="wrap hero">
     <div class="intro">
-      <h1>Mum's Christmas. Handled. From anywhere.</h1>
-      <p class="lede">Personalised NZ gift boxes for the people back home, packed like the ones influencers get. Tell us who you're sorting this Christmas and we'll save you a spot before pre-sale opens on 9 November.</p>
+      <h1><span class="who" id="h1who">Mum</span> will think you planned this.</h1>
+      <p class="lede">NZ gift boxes with their name printed on the sleeve and your card inside, packed in Auckland like an influencer's PR box. We'll remind you before Christmas sneaks up again. Pre-sale opens 9 November.</p>
     </div>
 
     <div class="formwrap">
@@ -260,6 +240,7 @@
           <p class="fine">We only use these details to remind you and to deliver your boxes. No spam, and nothing goes to anyone else.</p>
         </form>
       </div>
+      <p class="how">We print their name, pack it in Auckland and deliver anywhere in NZ before Christmas. No customs, no international postage.</p>
 
       <div class="card done" id="doneCard" hidden>
         <h2 id="doneTitle">You're on the list.</h2>
@@ -291,39 +272,36 @@
           <svg class="sleeve-mark" viewBox="0 0 40 40"><ellipse cx="18" cy="23" rx="13" ry="11" fill="#FBFCFD"/><circle cx="27" cy="16" r="5.5" fill="#FBFCFD"/><path d="M31 17 L39 22 L31.5 19.5Z" fill="#F1C232"/></svg>
         </div>
       </div>
-      <div class="tag">Their name, printed on every box</div>
-      <p class="stage-note">This sleeve updates as you fill in the form. Every box is printed for the person opening it.</p>
+      <div class="tag">Sorted before you forget</div>
+      <p class="stage-note">This is the actual sleeve. Type a name in the form and watch it change. Every box is printed for the person opening it.</p>
     </div>
   </div>
 
   <section class="band light">
-    <div class="wrap">
-      <h3 class="section">How it works</h3>
-      <ol class="steps">
-        <li><h4>Tell us who</h4><p>Pick a box for each person: Mum, Dad, your sibling, your partner, the kids. Add a message.</p></li>
-        <li><h4>We print and pack it in NZ</h4><p>Their name on the sleeve, your card inside, curated NZ-made goodies. No international freight, no customs.</p></li>
-        <li><h4>It turns up on time</h4><p>Delivered anywhere in NZ before Christmas. We'll remind you about birthdays after that, so you're never the one who forgot.</p></li>
-      </ol>
+    <div class="wrap boxes-wrap">
+      <div>
+        <h2 class="section">You pick who it's for. We pick what's in it.</h2>
+        <p class="sub">Five Christmas boxes, each built around one person, all NZ-made goodies. No browsing 40 options at 11pm.</p>
+      </div>
+      <div>
+        <ul class="boxlist">
+          <li><span class="swatch" style="background:var(--crimson)"></span><h3>Mum</h3><p>The one she'll show everyone at the bach.</p></li>
+          <li><span class="swatch" style="background:var(--flax)"></span><h3>Dad</h3><p>Better than socks. Still might include socks.</p></li>
+          <li><span class="swatch" style="background:var(--kowhai)"></span><h3>The sibling</h3><p>Finally, a present that makes your sister look bad.</p></li>
+          <li><span class="swatch" style="background:var(--ink)"></span><h3>Long-distance partner</h3><p>Because a video call isn't a present.</p></li>
+          <li><span class="swatch" style="background:var(--line-strong)"></span><h3>The kids</h3><p>Nieces, nephews, godkids. Instant favourite uncle.</p></li>
+        </ul>
+        <p class="price"><strong>From NZ$49, delivered anywhere in New Zealand.</strong> Christmas boxes are around NZ$89. Final contents and prices land with pre-sale.</p>
+      </div>
     </div>
   </section>
 
   <section class="band">
-    <div class="wrap">
-      <h3 class="section">Five Christmas boxes, each built for one person</h3>
-      <div class="boxes">
-        <div class="mini"><div class="band-strip" style="background:var(--crimson)"></div><h4>Mum</h4><p>The one she'll show everyone at the bach.</p></div>
-        <div class="mini"><div class="band-strip" style="background:var(--flax)"></div><h4>Dad</h4><p>Better than socks. Still might include socks.</p></div>
-        <div class="mini"><div class="band-strip" style="background:var(--kowhai)"></div><h4>The Sibling</h4><p>For the one who stayed home and does all the visiting.</p></div>
-        <div class="mini"><div class="band-strip" style="background:var(--ink)"></div><h4>Long-distance Partner</h4><p>Because a video call isn't a present.</p></div>
-        <div class="mini"><div class="band-strip" style="background:#5B8FA8"></div><h4>The Kids</h4><p>Nieces, nephews, godkids. Instant favourite uncle.</p></div>
-      </div>
-      <p class="fine" style="font-size:15px;margin-top:20px">From NZ$49, delivered anywhere in New Zealand. Final contents and prices land with pre-sale.</p>
-    </div>
-  </section>
-
-  <section class="band light">
     <div class="wrap dates">
-      <h3 class="section" style="margin:0">Your NZ dates aren't your local dates</h3>
+      <div>
+        <h2 class="section">Your NZ dates aren't your local dates</h2>
+        <p class="sub">Mother's Day back home isn't the one on your calendar. We'll remind you on the NZ date, with time to spare.</p>
+      </div>
       <ul class="datelist">
         <li><span>Last Christmas order</span><span>Saturday 12 December</span></li>
         <li><span>NZ Mother's Day</span><span>2nd Sunday in May</span></li>
@@ -333,22 +311,29 @@
     </div>
   </section>
 
-  <section class="band">
+  <section class="band light">
     <div class="wrap faq">
-      <h3 class="section">Questions</h3>
-      <details><summary>Where do you deliver?</summary><p>Anywhere in New Zealand. You can live anywhere; your card is charged in your own currency.</p></details>
-      <details><summary>What does it cost?</summary><p>Boxes start at NZ$49 delivered. Christmas boxes are around NZ$89. The waitlist is free, and early access gets you first pick before boxes sell out.</p></details>
-      <details><summary>When can I order?</summary><p>Pre-sale opens to the waitlist on 9 November, then to everyone 72 hours later. The last Christmas order date is 12 December.</p></details>
-      <details><summary>Can I change the box or the message?</summary><p>Yes, until we pack it. You'll get a preview of the box and the printed name before we send.</p></details>
-      <details><summary>What do you do with my details?</summary><p>We use them to remind you about dates and to deliver your boxes. We don't sell or share them, and you can ask us to delete them at any time.</p></details>
+      <h2 class="section">Questions</h2>
+      <dl class="qa">
+        <div><dt>Where do you deliver?</dt><dd>Anywhere in New Zealand. You can live anywhere; your card is charged in your own currency.</dd></div>
+        <div><dt>What does it cost?</dt><dd>Boxes start at NZ$49 delivered. Christmas boxes are around NZ$89. The waitlist is free, and early access gets you first pick before boxes sell out.</dd></div>
+        <div><dt>When can I order?</dt><dd>Pre-sale opens to the waitlist on 9 November, then to everyone 72 hours later. The last Christmas order date is Saturday 12 December.</dd></div>
+        <div><dt>What if I forget to order?</dt><dd>We'll remind you. That's sort of the whole point.</dd></div>
+        <div><dt>Can I change the box or the message?</dt><dd>Yes, until we pack it. You'll see a preview of the box and the printed name before we send.</dd></div>
+        <div><dt>What do you do with my details?</dt><dd>We use them to remind you about dates and to deliver your boxes. We don't sell or share them, and you can ask us to delete them at any time.</dd></div>
+      </dl>
     </div>
   </section>
 </main>
 
 <footer>
   <div class="wrap">
-    <span>Farbird. Gifts home for Kiwis abroad. Made in Aotearoa New Zealand.</span>
-    <span><a href="mailto:hello@farbird.co">hello@farbird.co</a></span>
+    <span>Farbird. Sorted before you forget. Packed in Auckland.</span>
+    <nav aria-label="Farbird elsewhere">
+      <a href="https://www.instagram.com/farbird.nz/" rel="noopener">Instagram</a>
+      <a href="https://www.tiktok.com/@farbirdnz" rel="noopener">TikTok</a>
+      <a href="mailto:hello@farbird.co">hello@farbird.co</a>
+    </nav>
   </div>
 </footer>
 
@@ -358,7 +343,7 @@
     <div class="row three">
       <div>
         <label>Their first name</label>
-        <input data-k="first_name" placeholder="Mum, Sarah, Koro…" autocomplete="off">
+        <input data-k="first_name" placeholder="Sandra" autocomplete="off">
       </div>
       <div>
         <label>Who they are</label>
@@ -443,6 +428,7 @@
     const rel = first.querySelector('[data-k="relationship"]').value;
     const who = name || (["Mum","Dad"].includes(rel) ? rel : "you");
     $("sleeveFor").textContent = "For " + who;
+    $("h1who").textContent = name || (["Mum","Dad"].includes(rel) ? rel : "They");
     const me = $("fname").value.trim() || "Chris";
     const city = CITY[$("country").value] || "far away";
     $("sleeveFrom").textContent = `from ${me} in ${city}, Merry Christmas`;
@@ -490,10 +476,10 @@
     $("refs").textContent = d.referrals;
     const names = people.map(p => p.first_name).filter(Boolean);
     if (names.length) $("doneTitle").textContent = `You're on the list. ${names.length === 1 ? names[0] + " is" : names.length + " people are"} sorted.`;
-    const msg = `Sorting Christmas for the family back in NZ with Farbird. Personalised boxes, delivered in NZ, no international postage: ${link}`;
+    const msg = `Found a way to look organised this Christmas. Farbird prints their name on an NZ gift box and delivers it anywhere in NZ, no international postage: ${link}`;
     $("shareWa").href = "https://wa.me/?text=" + encodeURIComponent(msg);
     $("shareFb").href = "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(link);
-    $("shareMail").href = "mailto:?subject=" + encodeURIComponent("Christmas gifts home, sorted") + "&body=" + encodeURIComponent(msg);
+    $("shareMail").href = "mailto:?subject=" + encodeURIComponent("Mum will think you planned this") + "&body=" + encodeURIComponent(msg);
     $("formCard").hidden = true; $("doneCard").hidden = false;
     $("doneCard").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
   }
