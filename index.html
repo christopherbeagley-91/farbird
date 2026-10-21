@@ -24,6 +24,10 @@
     --paper: #FBFCFD;
     --line: #B9CCD5;
     --line-strong: #6F8794;
+    --paua: #0E5A63;
+    --fig: #6E2639;
+    --blush: #F4C7CF;
+    --jandal: #1F4E9C;
     --radius-0: 0px;
     --radius-sm: 6px;
     --radius-lg: 18px;
@@ -63,7 +67,7 @@
   }
   .box::before { /* tissue peeking out of the box */
     content: ""; position: absolute; inset: 16px 16px auto 16px; height: 36%;
-    background: repeating-linear-gradient(118deg, var(--paper) 0 13px, var(--sky-deep) 13px 26px);
+    background: repeating-linear-gradient(118deg, var(--paper) 0 13px, var(--blush) 13px 26px);
   }
   .sleeve {
     position: absolute; left: -5%; right: -3%; top: 44%; bottom: 13%;
@@ -133,6 +137,10 @@
   /* Sections */
   section.band { padding-top: 80px; padding-bottom: 80px; }
   section.band.light { background: var(--paper); }
+  section.band.paua { background: var(--paua); color: var(--paper); }
+  section.band.paua .sub, section.band.paua .datelist li span:last-child { color: var(--sky); }
+  section.band.paua .datelist { border-top-color: var(--paper); }
+  section.band.paua .datelist li { border-bottom-color: rgba(251, 252, 253, 0.28); }
   h2.section { font: 800 clamp(32px, 4.2vw, 52px)/1 var(--display); letter-spacing: -0.03em; margin: 0; max-width: 16em; text-wrap: balance; }
   .sub { color: var(--ink-soft); margin: 14px 0 0; max-width: 32em; }
 
@@ -281,22 +289,22 @@
     <div class="wrap boxes-wrap">
       <div>
         <h2 class="section">You pick who it's for. We pick what's in it.</h2>
-        <p class="sub">Five Christmas boxes, each built around one person, all NZ-made goodies. No browsing 40 options at 11pm.</p>
+        <p class="sub">Five Christmas boxes, each built around one person: one thing that's trending overseas right now, plus NZ-made treats. No browsing 40 options at 11pm.</p>
       </div>
       <div>
         <ul class="boxlist">
           <li><span class="swatch" style="background:var(--crimson)"></span><h3>Mum</h3><p>The one she'll show everyone at the bach.</p></li>
           <li><span class="swatch" style="background:var(--flax)"></span><h3>Dad</h3><p>Better than socks. Still might include socks.</p></li>
           <li><span class="swatch" style="background:var(--kowhai)"></span><h3>The sibling</h3><p>Finally, a present that makes your sister look bad.</p></li>
-          <li><span class="swatch" style="background:var(--ink)"></span><h3>Long-distance partner</h3><p>Because a video call isn't a present.</p></li>
-          <li><span class="swatch" style="background:var(--line-strong)"></span><h3>The kids</h3><p>Nieces, nephews, godkids. Instant favourite uncle.</p></li>
+          <li><span class="swatch" style="background:var(--fig)"></span><h3>Long-distance partner</h3><p>Because a video call isn't a present.</p></li>
+          <li><span class="swatch" style="background:var(--jandal)"></span><h3>The kids</h3><p>Nieces, nephews, godkids. Instant favourite uncle.</p></li>
         </ul>
         <p class="price"><strong>From NZ$49, delivered anywhere in New Zealand.</strong> Christmas boxes are around NZ$89. Final contents and prices land with pre-sale.</p>
       </div>
     </div>
   </section>
 
-  <section class="band">
+  <section class="band paua">
     <div class="wrap dates">
       <div>
         <h2 class="section">Your NZ dates aren't your local dates</h2>
