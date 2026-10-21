@@ -1,6 +1,6 @@
 # Farbird
 
-Personalised, PR-style NZ gift boxes for Kiwis living overseas, sent to family back home, with reminders so nobody misses a date. "Farbird" is the working name (trademark checks pending). EXPAT is the future platform / member-club sub-brand.
+Personalised, PR-style NZ gift boxes for Kiwis living overseas, sent to family back home, with reminders so nobody misses a date. Name locked as Farbird (NZ company name reserved Oct 2026; IPONZ trademark not yet filed). Handles: Instagram @farbird.nz, TikTok @farbirdnz. EXPAT is the future platform / member-club sub-brand.
 
 ## Status (Oct 2026)
 Christmas 2026 test. Waitlist from 19 Oct, pre-sale 9 Nov, last order date Sat 12 Dec, go/kill 16 Jan 2027.
