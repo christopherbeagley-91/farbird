@@ -177,7 +177,7 @@ const md = s => DOMPurify.sanitize(marked.parse(s || ""));
 const pref = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
 
 /* ---------- Table configs: one CRUD engine drives every list ---------- */
-const OWNERS = ["Chris", "Mum", "Lauren", "Lynn", "Chris + Mum", "Chris + Lauren", "Lauren + Mum", "Lauren + Lynn", "All"];
+const OWNERS = ["Chris", "Mum", "Lauren", "Lynn", "Emily", "Chris + Mum", "Chris + Lauren", "Lauren + Mum", "Lauren + Lynn", "Lauren + Emily", "All"];
 const T = {
   hq_tasks: {
     label: "task", order: ["due_date", true], group: "phase",

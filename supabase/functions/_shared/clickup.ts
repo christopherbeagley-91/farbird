@@ -66,19 +66,21 @@ export function msToDate(ms: string | number | null | undefined): string | null 
 }
 
 // ---------- Owners and phases (as ClickUp tags) ----------
-export const OWNER_TAGS = ["chris", "mum", "lauren", "lynn"] as const;
-const OWNER_NAMES: Record<string, string> = { chris: "Chris", mum: "Mum", lauren: "Lauren", lynn: "Lynn" };
+export const OWNER_TAGS = ["chris", "mum", "lauren", "lynn", "emily"] as const;
+/** "All" means the core team; Emily (design and logo) is assigned by name. */
+const CORE_TAGS = ["chris", "mum", "lauren", "lynn"] as const;
+const OWNER_NAMES: Record<string, string> = { chris: "Chris", mum: "Mum", lauren: "Lauren", lynn: "Lynn", emily: "Emily" };
 
 export function ownerTags(owner: string | null): string[] {
   if (!owner) return [];
-  if (owner.trim().toLowerCase() === "all") return [...OWNER_TAGS];
+  if (owner.trim().toLowerCase() === "all") return [...CORE_TAGS];
   return owner.split("+").map((s) => s.trim().toLowerCase()).filter((s) => (OWNER_TAGS as readonly string[]).includes(s));
 }
 
 export function ownerFromTags(tags: { name: string }[] | undefined): string | null {
   const present = OWNER_TAGS.filter((t) => (tags ?? []).some((x) => x.name.toLowerCase() === t));
   if (!present.length) return null;
-  if (present.length === OWNER_TAGS.length) return "All";
+  if (present.length === CORE_TAGS.length && CORE_TAGS.every((t) => present.includes(t))) return "All";
   return present.map((t) => OWNER_NAMES[t]).join(" + ");
 }
 

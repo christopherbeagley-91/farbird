@@ -10,6 +10,7 @@ Christmas 2026 test. Waitlist from 19 Oct, pre-sale 9 Nov, last order date Sat 1
 - Mum: NZ operations, suppliers (NZ + China), courier, packing
 - Lauren: brand, creative, influencers, UGC, events
 - Lynn: print and packaging
+- Emily (Lauren's friend): design and logo
 
 ## Repo layout
 - `index.html` — public waitlist page (static, deployed to GitHub Pages by `.github/workflows/pages.yml`). Writes only through the `join_waitlist` RPC.
@@ -31,7 +32,7 @@ Christmas 2026 test. Waitlist from 19 Oct, pre-sale 9 Nov, last order date Sat 1
 - New HQ tables: enable RLS and add the `"team all"` policy using `public.is_team()`, plus the `touch` trigger.
 - Add a teammate: `insert into public.team_members (email, name, role) values (...)`.
 - Keep the waitlist page a single self-contained HTML file. Mobile-first; test at 390px.
-- Brand tokens: sky #E4EEF2, ink #17222E, crimson #B3182B, flax #3D5A33, kowhai #F1C232. Fonts: Bricolage Grotesque (display), Instrument Sans (body).
+- Brand tokens (Kiwiana palette; full set in the Farbird design system): sky #E4EEF2, ink #17222E, crimson/pōhutukawa #B3182B, flax/bush green #3D5A33, kowhai #F1C232, paua #0E5A63, fig #6E2639, blush #F4C7CF, jandal #1F4E9C. Fonts: Bricolage Grotesque (display), Instrument Sans (body).
 - Voice: dry Kiwi humour, warm, never cheesy. Sentence case. No te reo Māori in the brand mark.
 - Money in NZD. Dates in NZ terms (NZ Mother's Day 2nd Sun May, Father's Day 1st Sun Sep).
-- No alcohol in boxes (needs NZ off-licence). Pre-packaged NZ-made food only.
+- No alcohol in boxes (needs NZ off-licence). Food is pre-packaged only. Treats may be international (decided Oct 2026), bought from NZ importers who are MPI-registered food importers; buying food direct from overseas means registering Farbird with MPI first.

@@ -47,6 +47,10 @@ Deno.test("owners map to tags and back, order-insensitive", () => {
   eq(ownerFromTags(tag("mum", "lauren", "1-lock")), "Mum + Lauren", "from tags");
   eq(ownerFromTags(tag("chris", "mum", "lauren", "lynn")), "All", "everyone");
   eq(ownerFromTags(tag("1-lock")), null, "no owner tags");
+  eq(ownerTags("Lauren + Emily"), ["lauren", "emily"], "emily pair");
+  eq(ownerFromTags(tag("emily", "lauren")), "Lauren + Emily", "emily from tags");
+  eq(ownerFromTags(tag("emily")), "Emily", "emily alone");
+  eq(ownerFromTags(tag("chris", "mum", "lauren", "lynn", "emily")), "Chris + Mum + Lauren + Lynn + Emily", "all plus emily is not All");
   assert(sameOwners("Lauren + Mum", "Mum + Lauren"), "order-insensitive");
   assert(!sameOwners("Chris", "Chris + Mum"), "different sets");
 });
