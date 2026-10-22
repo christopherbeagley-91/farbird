@@ -122,6 +122,7 @@
   .submit:hover { background: var(--crimson); }
   .submit[disabled] { opacity: 0.6; cursor: progress; }
   .fine { font-size: 13px; color: var(--ink-soft); margin: 12px 0 0; }
+  .fine a, .qa dd a { color: inherit; }
   .error { color: var(--crimson-dark); font-size: 15px; margin: 12px 0 0; min-height: 1em; }
   .how { font-size: 16px; margin: 18px 4px 0; max-width: 34em; }
 
@@ -215,7 +216,7 @@
       <div class="card" id="formCard">
         <form id="form" novalidate>
           <h2>Who are you sorting this Christmas?</h2>
-          <p class="hint">Add the people in NZ you're buying for. You can change it all later.</p>
+          <p class="hint">Add the people in NZ you're planning to send something to. You can change it all later.</p>
 
           <div id="people"></div>
           <button type="button" class="add" id="addPerson">Add another person</button>
@@ -248,7 +249,7 @@
 
           <button class="submit" type="submit" id="submit">Save my spot</button>
           <p class="error" id="error" role="alert"></p>
-          <p class="fine">We only use these details to remind you and to deliver your boxes. No spam, and nothing goes to anyone else.</p>
+          <p class="fine" id="consent">By saving your spot, you agree that we can email you about pre-sale, your orders and reminders for the dates you add. Unsubscribe any time. We use the people you add only to remind you and deliver their box, and we never sell anyone's details. <a href="privacy.html">Privacy statement</a>.</p>
         </form>
       </div>
       <p class="how">We print their name, pack it in Auckland and deliver anywhere in NZ before Christmas. No customs, no international postage.</p>
@@ -331,7 +332,8 @@
         <div><dt>When can I order?</dt><dd>Pre-sale opens to the waitlist on 9 November, then to everyone 72 hours later. The last Christmas order date is Saturday 12 December.</dd></div>
         <div><dt>What if I forget to order?</dt><dd>We'll remind you. That's sort of the whole point.</dd></div>
         <div><dt>Can I change the box or the message?</dt><dd>Yes, until we pack it. You'll see a preview of the box and the printed name before we send.</dd></div>
-        <div><dt>What do you do with my details?</dt><dd>We use them to remind you about dates and to deliver your boxes. We don't sell or share them, and you can ask us to delete them at any time.</dd></div>
+        <div><dt>How does the referral offer work?</dt><dd>Share your link. When 3 people join the waitlist through it before pre-sale closes, you get free name printing on your Christmas 2026 order. They need to be real people using their own email, and it's one reward per person. The reward has no cash value; we'll confirm it by email before you order.</dd></div>
+        <div><dt>What do you do with my details?</dt><dd>We use them to remind you about dates and to deliver your boxes. We don't sell them, and you can ask us to see, change or delete them at any time. The full detail is in our <a href="privacy.html">privacy statement</a>.</dd></div>
       </dl>
     </div>
   </section>
@@ -343,6 +345,7 @@
     <nav aria-label="Farbird elsewhere">
       <a href="https://www.instagram.com/farbird.nz/" rel="noopener">Instagram</a>
       <a href="https://www.tiktok.com/@farbirdnz" rel="noopener">TikTok</a>
+      <a href="privacy.html">Privacy</a>
       <a href="mailto:hello@farbird.co">hello@farbird.co</a>
     </nav>
   </div>
