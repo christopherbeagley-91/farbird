@@ -196,8 +196,12 @@ const T = {
   },
   hq_suppliers: {
     label: "supplier", order: ["name", true], filters: ["category", "status", "owner"],
+    // Website and account links live in hq_supplier_links (one row per supplier).
+    ext: { table: "hq_supplier_links", key: "supplier_id" },
     fields: [
       { k: "name", label: "Supplier", req: true },
+      { k: "website", label: "Website", type: "url", link: "Open", ext: true },
+      { k: "account_url", label: "Account / trade", type: "url", link: "Sign up", ext: true },
       { k: "category", label: "Category", type: "select", opts: ["Chocolate & sweets", "Coffee & tea", "Pantry", "Skincare & body", "Homeware", "Kids", "Packaging", "Print", "Courier", "China branded items", "Other"] },
       { k: "location", label: "Location" },
       { k: "contact", label: "Contact" },
@@ -308,6 +312,13 @@ const main = () => document.getElementById("main");
 async function load(table) {
   const { data, error } = await sb.from(table).select("*");
   if (error) { main().innerHTML = `<div class="panel">Couldn't load ${table}: ${esc(error.message)}</div>`; throw error; }
+  const ext = T[table]?.ext;
+  if (ext) {
+    const { data: extra } = await sb.from(ext.table).select("*");
+    const byId = new Map((extra || []).map(x => [x[ext.key], x]));
+    const keys = T[table].fields.filter(fd => fd.ext).map(fd => fd.k);
+    data.forEach(row => { const x = byId.get(row.id); keys.forEach(k => row[k] = x ? x[k] : null); });
+  }
   state.cache[table] = data; return data;
 }
 
@@ -387,9 +398,13 @@ function editRow(table, row) {
       if (!confirm(`Delete this ${cfg.label}?`)) return;
       res = await sb.from(table).delete().eq("id", row.id);
     } else {
-      const payload = {};
-      fields.forEach(fd => { const val = form.elements[fd.k].value.trim(); payload[fd.k] = val === "" ? null : (fd.type === "number" ? Number(val) : val); });
-      res = isNew ? await sb.from(table).insert(payload) : await sb.from(table).update(payload).eq("id", row.id);
+      const payload = {}, extPayload = {};
+      fields.forEach(fd => { const val = form.elements[fd.k].value.trim(); (fd.ext ? extPayload : payload)[fd.k] = val === "" ? null : (fd.type === "number" ? Number(val) : val); });
+      res = isNew ? await sb.from(table).insert(payload).select("id").single() : await sb.from(table).update(payload).eq("id", row.id);
+      if (!res.error && cfg.ext) {
+        const id = isNew ? res.data.id : row.id;
+        res = await sb.from(cfg.ext.table).upsert({ [cfg.ext.key]: id, ...extPayload }, { onConflict: cfg.ext.key });
+      }
     }
     if (res.error) { document.getElementById("dlgErr").textContent = "Didn't save: " + res.error.message; return; }
     dlg.close(); go(state.view);
