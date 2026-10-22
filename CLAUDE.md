@@ -17,6 +17,7 @@ Christmas 2026 test. Waitlist from 19 Oct, pre-sale 9 Nov, last order date Sat 1
 - `hq/index.html` — Farbird HQ, the team-only project manager / CRM (tasks, timeline, waitlist, boxes, suppliers, financials, marketing, plan). Magic-link sign-in; access gated by `public.team_members`.
 - `supabase/migrations/` — schema as applied to the live project.
 - `supabase/functions/` — Edge Functions. `_shared/` holds auth, secrets, logging, retry, webhook and dispatch helpers; `integrations-status` (HQ status/Sync now/self-test) and `integrations-cron` (pg_cron every 5 min).
+- Agents: `supabase/functions/_shared/agents.ts` (role prompts, tools, Claude tool loop, brand audit, Metricool), `agent` (HQ panels: status, chat, report, run, settings, scheduled) and `agents-sync` (hourly, called by the dispatcher as integration key `agents`). Runs log to `agent_runs`; marketing posts live in `content_queue`. Panels: Finance on Financials, Marketing on Marketing, Operations on Waitlist.
 - `docs/hq-build-prompt.md` — the HQ roadmap: core views, integrations framework (edge functions, secrets, sync log, external refs), connectors (ClickUp, Stripe, Resend, PostHog, Google Workspace, courier, UGC, Twilio, Canva) and CRM/loyalty. Follow it for any HQ or integration work.
 
 ## Stack
@@ -26,6 +27,7 @@ Christmas 2026 test. Waitlist from 19 Oct, pre-sale 9 Nov, last order date Sat 1
 
 ## Rules
 - Integrations: third-party keys only in Supabase Edge Function secrets, never in HTML. Connectors are `<key>-sync` / `<key>-webhook` functions built on `_shared/`, deployed with verify_jwt = false (they call `authorize()`). Map records via `external_refs`, log via `logSync`, store webhooks via `recordWebhook` before processing.
+- Agents never move money, refund, delete or email customers; they read HQ data and draft. Marketing autopilot only schedules organic posts that pass the brand audit. Paid ads stay human-approved.
 - Never add an `anon` select policy on `waitlist` or `waitlist_people`. Public writes go through `join_waitlist()` only.
 - Tool list lives in `supabase/functions/_shared/registry.ts`; edit there, not in the `integrations` table. `kind: "manual"` tools have no sync function.
 - Migrations are additive only (the Supabase MCP blocks ALTER/DELETE): new tables or functions, not column changes.

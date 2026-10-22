@@ -20,6 +20,7 @@ export type Tool = {
   cost_note: string;
   owner: string;
   config?: Record<string, unknown>; // defaults merged into config (existing values win)
+  enabled_by_default?: boolean; // scheduled sync switched on when the row is first created
 };
 
 export const REGISTRY: Tool[] = [
@@ -47,6 +48,12 @@ export const REGISTRY: Tool[] = [
     description: "Buy the domain at cost and run DNS, pointing it at GitHub Pages. Also sells .co.nz.",
     required_secrets: [], sync_every_minutes: 1440, owner: "Chris",
     account_url: "https://dash.cloudflare.com", monthly_cost_nzd: 4, cost_note: "Domains only, about NZ$45/yr" },
+  { key: "agents", name: "Farbird agents", category: "AI agents", phase: "Now", kind: "sync", sort: 6,
+    description: "Finance, Marketing and Operations agents (panels on Financials, Marketing and Waitlist). Hourly: daily marketing plan and ops check at 8am NZ, finance report Mondays 8am NZ, approved posts sent to Metricool.",
+    required_secrets: ["ANTHROPIC_API_KEY"], sync_every_minutes: 60, owner: "Chris",
+    account_url: "https://console.anthropic.com", monthly_cost_nzd: 25, cost_note: "Claude API usage, roughly NZ$10–40/mo at this volume",
+    enabled_by_default: true,
+    config: { marketing: { autopilot: true, channels: ["instagram", "tiktok", "facebook"] }, finance: {}, ops: {} } },
 
   // --- Sell and talk to customers ---
   { key: "stripe", name: "Stripe", category: "Payments", phase: "Before pre-sale", kind: "sync", sort: 10,
@@ -79,6 +86,10 @@ export const REGISTRY: Tool[] = [
     description: "Founder story and gifting questions in r/newzealand and expat subs. Read each sub's self-promotion rules first.",
     required_secrets: [], sync_every_minutes: 1440, owner: "Chris",
     account_url: "https://www.reddit.com/r/newzealand", monthly_cost_nzd: 0, cost_note: "Free" },
+  { key: "metricool", name: "Metricool", category: "Social scheduling", phase: "Now", kind: "manual", sort: 19,
+    description: "Schedules and publishes Instagram, TikTok and Facebook posts for the Marketing agent, and reports results. API needs the Advanced plan; add METRICOOL_API_TOKEN, METRICOOL_USER_ID and METRICOOL_BLOG_ID in Supabase secrets.",
+    required_secrets: [], sync_every_minutes: 1440, owner: "Lauren",
+    account_url: "https://app.metricool.com", monthly_cost_nzd: 0, cost_note: "Advanced plan for API; check current price" },
   { key: "canva", name: "Canva", category: "Design", phase: "Now", kind: "manual", sort: 23,
     description: "Sleeves, cards and social posts. Store design links against boxes and channels.",
     required_secrets: [], sync_every_minutes: 1440, owner: "Lauren",

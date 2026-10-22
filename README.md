@@ -79,6 +79,25 @@ After that: saving a task in HQ pushes it to ClickUp; edits in ClickUp arrive by
 
 **Tests:** `deno test --allow-env supabase/functions/_shared/` (signatures, retry, scheduling, ClickUp mapping and a full sync simulation). HQ → Integrations → Run self-test checks the live database path.
 
+## Agents
+
+Three Claude agents live in HQ: **Finance** (Financials tab), **Marketing** (Marketing tab, with the content queue) and **Operations** (Waitlist tab). Each one can be asked questions, give a status report, or run its job on demand. The scheduler runs them on its own (integration key `agents`, hourly):
+
+- Marketing: every day from 8am NZ, drafts the next 3 days of posts. With autopilot on, posts that pass the brand audit are scheduled in Metricool once they have an image or video (Facebook text posts go straight away).
+- Operations: daily check from 8am NZ.
+- Finance: weekly report on Mondays from 8am NZ.
+
+**Switch them on:** add these in Supabase → Edge Functions → Secrets:
+
+| Secret | For |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | All agents (console.anthropic.com, add billing credit) |
+| `METRICOOL_API_TOKEN`, `METRICOOL_USER_ID`, `METRICOOL_BLOG_ID` | Marketing posting (Metricool Advanced plan; connect Instagram, TikTok and Facebook inside Metricool first) |
+| `STRIPE_SECRET_KEY` or `SHOPIFY_ADMIN_TOKEN` + `SHOPIFY_STORE_DOMAIN` | Live sales for Finance |
+| `STARSHIPIT_API_KEY`, `RESEND_API_KEY` | Operations from pre-sale |
+
+Guardrails: agents read HQ data and draft; they never pay, refund, delete or email customers. Paid ads are recommendations only.
+
 ## How it's secured
 
 - The public key in the HTML can only call `join_waitlist()` and `waitlist_count()`. Row-level security returns nothing to anonymous reads.

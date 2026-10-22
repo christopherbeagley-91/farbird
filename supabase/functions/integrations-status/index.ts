@@ -62,7 +62,7 @@ async function applyRegistry(db: ReturnType<typeof admin>) {
     const existing = byKey.get(tool.key);
     const want = rowFor(tool, existing);
     if (!existing) {
-      const { error: insErr } = await db.from("integrations").insert({ ...want, status: "not_connected", enabled: false });
+      const { error: insErr } = await db.from("integrations").insert({ ...want, status: "not_connected", enabled: tool.enabled_by_default ?? false });
       if (insErr) console.error("registry insert failed", tool.key, insErr.message);
       continue;
     }

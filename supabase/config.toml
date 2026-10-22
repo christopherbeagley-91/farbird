@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.clickup-webhook]
 verify_jwt = false
+
+[functions.agent]
+verify_jwt = false
+
+[functions.agents-sync]
+verify_jwt = false

@@ -147,6 +147,36 @@
     .grid2 { grid-template-columns: 1fr; }
     .two { grid-template-columns: 1fr; }
   }
+
+  /* Agents */
+  .agent { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; margin-bottom: 24px; display: grid; gap: 14px; min-width: 0; }
+  .agent-head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .agent-dot { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font: 800 18px/1 var(--display); color: #fff; flex: none; }
+  .agent-head h2 { margin: 0; }
+  .agent-head p { margin: 2px 0 0; color: var(--soft); font-size: 13px; max-width: 62ch; }
+  .agent-head .spacer { flex: 1; }
+  .conns { display: flex; flex-wrap: wrap; gap: 6px; }
+  .conn { font-size: 12px; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--line); color: var(--soft); cursor: help; }
+  .conn.ok { background: #DCEBD6; color: #2C4524; border-color: transparent; }
+  .conn.req { border-color: var(--crimson); color: var(--crimson); }
+  .agent-latest { background: var(--sky); border-radius: 10px; padding: 12px 14px; font-size: 14px; max-height: 340px; overflow: auto; min-width: 0; }
+  .agent-latest .meta { font-size: 12px; color: var(--soft); margin-bottom: 4px; }
+  .agent .md > :first-child { margin-top: 0; } .agent .md > :last-child { margin-bottom: 0; }
+  .agent .md table { font-size: 13px; }
+  .chat { display: grid; gap: 8px; max-height: 380px; overflow: auto; }
+  .chat:empty { display: none; }
+  .msg { padding: 10px 12px; border-radius: 10px; font-size: 14px; max-width: 760px; min-width: 0; overflow-wrap: anywhere; }
+  .msg.you { background: var(--sky); justify-self: end; }
+  .msg.bot { border: 1px solid var(--line); justify-self: start; }
+  .msg.wait { color: var(--soft); border: 1px dashed var(--line); }
+  .ask { display: flex; gap: 8px; }
+  .ask input { flex: 1; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+  .agent-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .toggle { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; }
+  .pill.s-scheduled, .pill.s-posted { background: #DCEBD6; color: #2C4524; }
+  .pill.s-failed { background: #F6D5D9; color: #7D1020; }
+  .pill.s-draft { background: #FBEFC4; color: #5E4A07; }
+  @media (max-width: 700px) { .agent { padding: 14px; } .ask { flex-direction: column; } }
 </style>
 </head>
 <body>
@@ -212,6 +242,18 @@ const T = {
       { k: "status", label: "Status", type: "select", opts: ["Prospect", "Contacted", "Quoted", "Sampling", "Approved", "Rejected"], pill: true },
       { k: "owner", label: "Owner", type: "select", opts: OWNERS },
       { k: "notes", label: "Notes", type: "textarea", hide: true }
+    ]
+  },
+  content_queue: {
+    label: "post", order: ["post_at", true], filters: ["channel", "status"],
+    fields: [
+      { k: "post_at", label: "When", type: "datetime" },
+      { k: "channel", label: "Channel", type: "select", opts: ["instagram", "tiktok", "facebook"], req: true },
+      { k: "status", label: "Status", type: "select", opts: ["Draft", "Approved", "Scheduled", "Posted", "Failed", "Rejected"], pill: true },
+      { k: "caption", label: "Caption", type: "textarea" },
+      { k: "visual_brief", label: "Visual brief (for Lauren or Emily)", type: "textarea", hide: true },
+      { k: "media_url", label: "Image or video link", type: "url", link: "View" },
+      { k: "last_error", label: "Last error", type: "textarea", hide: true }
     ]
   },
   hq_boxes: {
@@ -329,7 +371,7 @@ async function listView(table, title, sub, extraTop = "") {
   const rows = await load(table);
   drawList(table, rows);
 }
-function drawList(table, rows) {
+function drawList(table, rows, elId = "tbl") {
   const cfg = T[table];
   const f = state.filters[table] ||= {};
   const visible = cfg.fields.filter(x => !x.hide);
@@ -349,15 +391,16 @@ function drawList(table, rows) {
     if (cfg.group && row[cfg.group] !== lastG) { lastG = row[cfg.group]; body += `<tr class="group"><td colspan="${visible.length}">${esc(lastG || "No phase")}</td></tr>`; }
     body += `<tr data-id="${row.id}">${visible.map(fd => cell(fd, row)).join("")}</tr>`;
   }
-  document.getElementById("tbl").innerHTML = `
+  const host = document.getElementById(elId);
+  host.innerHTML = `
     <div class="toolbar">${filt}<input data-f="_q" placeholder="Search" value="${esc(f._q || "")}" aria-label="Search">
       <span class="spacer"></span><span class="muted">${r.length} of ${rows.length}</span>
-      <button class="btn" id="addRow">Add ${cfg.label}</button></div>
+      <button class="btn" data-add>Add ${cfg.label}</button></div>
     <div class="tablewrap"><table><thead><tr>${visible.map(fd => `<th class="${fd.money ? "num" : ""}">${fd.label}</th>`).join("")}</tr></thead>
       <tbody>${body || `<tr><td colspan="${visible.length}" class="empty">Nothing here yet. Add the first ${cfg.label}.</td></tr>`}</tbody></table></div>`;
-  document.querySelectorAll("#tbl [data-f]").forEach(el => el.oninput = () => { f[el.dataset.f] = el.value; drawList(table, rows); if (el.dataset.f === "_q") { const q = document.querySelector('#tbl [data-f="_q"]'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); } });
-  document.getElementById("addRow").onclick = () => editRow(table, {});
-  document.querySelectorAll("#tbl tbody tr[data-id]").forEach(tr => tr.onclick = () => editRow(table, rows.find(x => x.id === tr.dataset.id)));
+  host.querySelectorAll("[data-f]").forEach(el => el.oninput = () => { f[el.dataset.f] = el.value; drawList(table, rows, elId); if (el.dataset.f === "_q") { const q = host.querySelector('[data-f="_q"]'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); } });
+  host.querySelector("[data-add]").onclick = () => editRow(table, {});
+  host.querySelectorAll("tbody tr[data-id]").forEach(tr => tr.onclick = () => editRow(table, rows.find(x => x.id === tr.dataset.id)));
 }
 function cell(fd, row) {
   const v = fd.calc ? fd.calc(row) : row[fd.k];
@@ -368,6 +411,7 @@ function cell(fd, row) {
     const late = fd.due && v && row.status !== "Done" && v < today();
     return `<td class="${late ? "overdue" : ""}" style="white-space:nowrap">${fmtDate(v)}</td>`;
   }
+  if (fd.type === "datetime") return `<td style="white-space:nowrap">${v ? new Date(v).toLocaleString("en-NZ", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : ""}</td>`;
   if (fd.type === "textarea") return `<td class="muted">${esc(String(v || "").slice(0, 90))}</td>`;
   return `<td>${esc(v)}</td>`;
 }
@@ -380,6 +424,7 @@ function editRow(table, row) {
     const v = row[fd.k] ?? "";
     if (fd.type === "select") return `<select name="${fd.k}">${fd.req ? "" : `<option value=""></option>`}${fd.opts.map(o => `<option ${o === v ? "selected" : ""}>${esc(o)}</option>`).join("")}${v && !fd.opts.includes(v) ? `<option selected>${esc(v)}</option>` : ""}</select>`;
     if (fd.type === "textarea") return `<textarea name="${fd.k}">${esc(v)}</textarea>`;
+    if (fd.type === "datetime") { const d = v ? new Date(v) : null; const local = d ? new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16) : ""; return `<input name="${fd.k}" type="datetime-local" value="${local}">`; }
     return `<input name="${fd.k}" type="${fd.type || "text"}" ${fd.type === "number" ? 'step="any"' : ""} value="${esc(v)}" ${fd.req ? "required" : ""}>`;
   };
   const fields = cfg.fields.filter(fd => !fd.calc);
@@ -399,7 +444,7 @@ function editRow(table, row) {
       res = await sb.from(table).delete().eq("id", row.id);
     } else {
       const payload = {}, extPayload = {};
-      fields.forEach(fd => { const val = form.elements[fd.k].value.trim(); (fd.ext ? extPayload : payload)[fd.k] = val === "" ? null : (fd.type === "number" ? Number(val) : val); });
+      fields.forEach(fd => { const val = form.elements[fd.k].value.trim(); (fd.ext ? extPayload : payload)[fd.k] = val === "" ? null : (fd.type === "number" ? Number(val) : fd.type === "datetime" ? new Date(val).toISOString() : val); });
       res = isNew ? await sb.from(table).insert(payload).select("id").single() : await sb.from(table).update(payload).eq("id", row.id);
       if (!res.error && cfg.ext) {
         const id = isNew ? res.data.id : row.id;
@@ -491,7 +536,8 @@ async function timeline() {
 }
 
 async function waitlist() {
-  main().innerHTML = `<h1>Waitlist</h1><p class="sub">Everyone who's signed up and the people they're buying for.</p><div id="wl">Loading…</div>`;
+  main().innerHTML = `<h1>Waitlist</h1><p class="sub">Everyone who's signed up and the people they're buying for.</p><div id="agentbox"></div><div id="wl">Loading…</div>`;
+  agentPanel("ops", "agentbox");
   const [{ data: wl, error }, { data: ppl }] = await Promise.all([
     sb.from("waitlist").select("*").order("created_at", { ascending: false }),
     sb.from("waitlist_people").select("*")
@@ -518,7 +564,8 @@ async function boxes() { await listView("hq_boxes", "Boxes", "The box range, pri
 async function suppliers() { await listView("hq_suppliers", "Suppliers", "NZ and China suppliers from first contact to approved."); }
 
 async function finance() {
-  main().innerHTML = `<h1>Financials</h1><p class="sub">Budget, actual spend and revenue in NZD.</p><div id="fk"></div><div id="tbl"></div>`;
+  main().innerHTML = `<h1>Financials</h1><p class="sub">Budget, actual spend and revenue in NZD.</p><div id="agentbox"></div><div id="fk"></div><div id="tbl"></div>`;
+  agentPanel("finance", "agentbox");
   const rows = await load("hq_finance");
   const by = (kind) => { const o = {}; rows.filter(r => r.kind === kind).forEach(r => o[r.category] = (o[r.category] || 0) + Number(r.amount_nzd)); return o; };
   const B = by("Budget"), A = by("Actual cost"), R = by("Revenue");
@@ -575,7 +622,13 @@ async function drawBreakeven(budget, spent, revenue) {
 }
 
 async function marketing() {
-  main().innerHTML = `<h1>Marketing</h1><p class="sub">Channels, targets and results. ICP, brand and growth loops live on the Plan page.</p><div id="tbl"></div><div id="mkplan" class="doc" style="margin-top:24px"></div>`;
+  main().innerHTML = `<h1>Marketing</h1><p class="sub">Channels, targets and results. ICP, brand and growth loops live on the Plan page.</p>
+    <div id="agentbox"></div>
+    <h2>Content queue</h2><p class="sub" style="margin-bottom:12px">The marketing agent drafts here. Add an image or video link to an approved Instagram or TikTok post and it goes to Metricool within the hour; Facebook text posts go straight away. Set a post to Rejected to stop it.</p>
+    <div id="cq"></div>
+    <h2 style="margin-top:28px">Channels</h2><div id="tbl"></div><div id="mkplan" class="doc" style="margin-top:24px"></div>`;
+  agentPanel("marketing", "agentbox");
+  drawList("content_queue", await load("content_queue"), "cq");
   drawList("hq_channels", await load("hq_channels"));
   const { data } = await sb.from("hq_plan").select("*").in("key", ["icp", "brand", "growth", "gamification"]).order("sort");
   document.getElementById("mkplan").innerHTML = (data || []).map(s => `<section><h2>${esc(s.title)}</h2><div class="md">${md(s.body)}</div></section>`).join("");
@@ -618,6 +671,92 @@ const SECRETS_URL = "https://supabase.com/dashboard/project/fmrabsrgdwqhyxcjnfgt
 const PHASES = ["Now", "Before pre-sale", "After Christmas", "Later"];
 const statusLabel = s => ({ connected: "Connected", not_connected: "Not connected", error: "Error", paused: "Paused" })[s] || s;
 const when = t => t ? new Date(t).toLocaleString("en-NZ", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "Never";
+
+/* ---------- Agents ---------- */
+const AGENTS = {
+  finance: { name: "Finance agent", letter: "F", color: "var(--flax)", run: "Run weekly report",
+    role: "Budget, spend, gross profit per box, breakeven, bills and the go/kill numbers. Reports to the team every Monday at 8am NZ." },
+  marketing: { name: "Marketing agent", letter: "M", color: "var(--crimson)", run: "Plan the next 3 days",
+    role: "Plans, writes and schedules Instagram, TikTok and Facebook posts, and tracks what drives sign-ups. Plans the next 3 days every morning at 8am NZ." },
+  ops: { name: "Operations agent", letter: "O", color: "#0E5A63", run: "Run daily check",
+    role: "Waitlist, recipients' dates, suppliers, overdue tasks and tool health. Checks in daily at 8am NZ; takes on orders, labels and enquiries from pre-sale." },
+};
+state.agentChat = state.agentChat || {};
+async function callAgent(body) {
+  const { data, error } = await sb.functions.invoke("agent", { body });
+  if (error) {
+    let msg = error.message;
+    try { const j = await error.context.json(); msg = j.error || msg; } catch {}
+    throw new Error(msg);
+  }
+  return data;
+}
+const agentMsg = m => `<div class="msg ${m.role === "user" ? "you" : m.wait ? "bot wait" : "bot"}">${m.role === "user" ? esc(m.content) : `<div class="md">${md(m.content)}</div>`}</div>`;
+async function agentPanel(key, elId) {
+  const a = AGENTS[key], host = document.getElementById(elId);
+  if (!host) return;
+  host.innerHTML = `<section class="agent" aria-label="${a.name}">
+    <div class="agent-head"><span class="agent-dot" style="background:${a.color}" aria-hidden="true">${a.letter}</span>
+      <div><h2>${a.name}</h2><p>${a.role}</p></div><span class="spacer"></span><span class="pill" id="ag-state-${key}">Checking</span></div>
+    <div id="ag-body-${key}" class="muted">Loading…</div></section>`;
+  try { drawAgent(key, await callAgent({ action: "status", agent: key })); }
+  catch (e) {
+    document.getElementById(`ag-state-${key}`).textContent = "Offline";
+    document.getElementById(`ag-body-${key}`).innerHTML = `<p class="note">Couldn't reach the agent: ${esc(e.message)}</p>`;
+  }
+}
+function drawAgent(key, st) {
+  const a = AGENTS[key], chat = state.agentChat[key] = state.agentChat[key] || [];
+  const pill = document.getElementById(`ag-state-${key}`), body = document.getElementById(`ag-body-${key}`);
+  if (!pill || !body) return;
+  pill.textContent = st.ready ? "Ready" : "Needs setup";
+  pill.className = `pill s-${st.ready ? "connected" : "not-connected"}`;
+  const missing = st.connections.filter(c => !c.ok && c.required && c.needs);
+  const last = (st.runs || []).find(r => r.trigger !== "chat" && r.status !== "running");
+  const when = d => new Date(d).toLocaleString("en-NZ", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+  const label = { schedule: "Scheduled run", report: "Status report", manual: "Run" };
+  const queue = st.queue && Object.keys(st.queue).length ? "Queue: " + Object.entries(st.queue).map(([k, v]) => `${v} ${k.toLowerCase()}`).join(" · ") : "";
+  body.className = "";
+  body.innerHTML = `
+    <div class="conns">${st.connections.map(c => `<span class="conn ${c.ok ? "ok" : c.required ? "req" : ""}" title="${esc(c.note)}${!c.ok && c.needs ? " · add " + esc(c.needs) + " in Supabase secrets" : ""}">${c.ok ? "✓" : "○"} ${esc(c.name)}</span>`).join("")}</div>
+    ${missing.length ? `<p class="note">To switch it on, add ${missing.map(c => `<code>${esc(c.needs)}</code>`).join(" and ")} in Supabase → Edge Functions → Secrets.</p>` : ""}
+    ${last ? `<div class="agent-latest"><div class="meta">${label[last.trigger] || "Run"} · ${when(last.created_at)}${last.status === "error" ? " · didn't finish" : ""}</div><div class="md">${md(last.reply || "")}</div></div>` : `<p class="note">No runs yet. ${st.ready ? "Ask it something or run it now." : ""}</p>`}
+    <div class="chat" id="ag-chat-${key}">${chat.map(agentMsg).join("")}</div>
+    <form class="ask" id="ag-ask-${key}"><input name="q" placeholder="Ask the ${a.name.toLowerCase()} anything" aria-label="Ask the ${a.name}" autocomplete="off"><button class="btn">Ask</button></form>
+    <div class="agent-actions">
+      <button class="btn ghost" type="button" data-act="report">Status report</button>
+      <button class="btn ghost" type="button" data-act="run">${a.run}</button>
+      ${key === "marketing" ? `<label class="toggle"><input type="checkbox" id="ag-auto" ${st.settings?.autopilot ? "checked" : ""}> Autopilot: schedule posts that pass the brand check without waiting for approval</label>` : ""}
+      <span class="muted" id="ag-note-${key}">${queue}</span></div>`;
+  const form = document.getElementById(`ag-ask-${key}`);
+  form.onsubmit = e => { e.preventDefault(); const q = form.q.value.trim(); if (q) { form.q.value = ""; askAgent(key, "chat", q); } };
+  body.querySelectorAll("[data-act]").forEach(b => b.onclick = () => askAgent(key, b.dataset.act, b.textContent));
+  const auto = document.getElementById("ag-auto");
+  if (auto) auto.onchange = async () => {
+    try { await callAgent({ action: "settings", agent: key, settings: { autopilot: auto.checked } }); document.getElementById(`ag-note-${key}`).textContent = auto.checked ? "Autopilot on" : "Autopilot off: drafts wait for approval"; }
+    catch (e) { auto.checked = !auto.checked; document.getElementById(`ag-note-${key}`).textContent = "Didn't save: " + e.message; }
+  };
+}
+async function askAgent(key, action, text) {
+  const chat = state.agentChat[key] = state.agentChat[key] || [];
+  const box = document.getElementById(`ag-chat-${key}`);
+  const history = chat.filter(m => !m.wait).slice(-8).map(m => ({ role: m.role, content: m.content }));
+  chat.push({ role: "user", content: text });
+  chat.push({ role: "assistant", content: action === "chat" ? "Thinking…" : "Working on it. This can take up to a minute.", wait: true });
+  if (box) box.innerHTML = chat.map(agentMsg).join("");
+  if (box) box.scrollTop = box.scrollHeight;
+  document.querySelectorAll(`#ag-body-${key} button`).forEach(b => b.disabled = true);
+  try {
+    const r = await callAgent(action === "chat" ? { action, agent: key, message: text, history } : { action, agent: key });
+    chat[chat.length - 1] = { role: "assistant", content: r.reply || "Done." };
+  } catch (e) {
+    chat[chat.length - 1] = { role: "assistant", content: "Couldn't finish: " + e.message };
+  }
+  try { drawAgent(key, await callAgent({ action: "status", agent: key })); }
+  catch { const b2 = document.getElementById(`ag-chat-${key}`); if (b2) b2.innerHTML = chat.map(agentMsg).join(""); }
+  const b3 = document.getElementById(`ag-chat-${key}`); if (b3) b3.scrollTop = b3.scrollHeight;
+  if (key === "marketing" && action !== "chat" && state.view === "marketing") drawList("content_queue", await load("content_queue"), "cq");
+}
 
 async function callIntegrations(body) {
   const { data, error } = await sb.functions.invoke("integrations-status", { body });
