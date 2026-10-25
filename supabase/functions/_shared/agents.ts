@@ -45,18 +45,39 @@ export function connections(agent: AgentKey): Connection[] {
     { name: "Gmail (hello@)", ok: false, required: false, note: "Customer enquiries. Connect once hello@farbird.co exists" }];
 }
 
+// ---------- Breakeven (same maths as HQ → Financials) ----------
+export const BE_DEFAULTS: Record<string, number> = {
+  avg_price: 89, discount_per_box: 5, boxes_per_customer: 1.6, product_cost: 35, base_kit: 8, courier: 11,
+  pack_wage: 20, pack_holiday_pct: 8, pack_kiwisaver_pct: 3.5, pack_minutes: 10, fee_pct: 3.3, fee_fixed: 0.3,
+};
+export function breakeven(v: Record<string, number>, fixed: number) {
+  const net = v.avg_price - v.discount_per_box;
+  const packing = v.pack_wage * (1 + v.pack_holiday_pct / 100 + v.pack_kiwisaver_pct / 100) * v.pack_minutes / 60;
+  const fees = net * v.fee_pct / 100 + v.fee_fixed;
+  const per_box = { product: v.product_cost, kit_and_print: v.base_kit, courier: v.courier, packing, card_fees: fees };
+  const variable = Object.values(per_box).reduce((s, n) => s + n, 0);
+  const gross_profit_per_box = net - variable;
+  const boxes_needed = gross_profit_per_box > 0 ? Math.ceil(fixed / gross_profit_per_box) : null;
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  return {
+    net_price: r2(net), per_box: Object.fromEntries(Object.entries(per_box).map(([k, n]) => [k, r2(n)])),
+    variable_cost_per_box: r2(variable), gross_profit_per_box: r2(gross_profit_per_box), boxes_needed,
+    customers_needed: boxes_needed ? Math.ceil(boxes_needed / Math.max(1, v.boxes_per_customer)) : null,
+  };
+}
+
 // ---------- Prompts ----------
 const BASE = (now: Date) => `You are part of the Farbird team, working inside Farbird HQ.
 Farbird sends personalised NZ gift boxes for Kiwis living overseas: the recipient's name is printed on the sleeve, the sender's card is inside, packed in Auckland and delivered anywhere in NZ, with reminders for NZ dates. Each box has one hero item that is trending overseas plus international treats.
-Christmas 2026 test: waitlist open, pre-sale 9 November, last order date Saturday 12 December, go/kill decision 16 January 2027. Shop: Shopify (being set up).
-Team: Chris (GTM, P&L, tech, lives in New York), Mum (NZ ops, suppliers, courier, packing), Lauren (brand, creative, influencers), Lynn (print and packaging), Emily (design and logo).
+Christmas 2026 test: waitlist opens 31 October (target 500 signups by 15 November), pre-sale 16 November, last order date Saturday 12 December, go/kill decision 16 January 2027. Shop: Shopify (being set up).
+Team: Chris (GTM, P&L, tech, lives in New York), Mum (NZ ops, suppliers, courier bookings), a hired student packer (packs and ships in December), Lauren (brand, creative, influencers), Lynn (print and packaging), Emily (design and logo).
 It is now ${nzLabel(now)} in New Zealand. Money is NZD. Dates are NZ dates.
 Rules: get every number from a tool and say where it came from; never invent figures, suppliers or results; if data is missing, say exactly what is missing and who can fix it. Never show customer emails or full names of the people customers buy for. You cannot pay, refund, delete or email anyone.
 Write like a sharp colleague: lead with the answer, short sentences, sentence case, plain English, bullets or a small table only when they help. Name the person who should act.`;
 
 const ROLES: Record<AgentKey, string> = {
   finance: `You are the Finance agent. You own the numbers: budget vs spend, revenue, gross profit per box, breakeven progress, cash, bills to pay, GST and the go/kill numbers for 16 January.
-Targets: at least NZ$20 gross profit per box; NZ$89 Christmas box leaves about NZ$40 for items after packaging (~NZ$8), courier (~NZ$10-12) and card fees (overseas cards ~3.3% + 30c on Shopify Payments).
+Targets: at least NZ$20 gross profit per box. The per-box costs (gifts and treats, box kit and print, courier, packing labour from the student packer's wage, holiday pay, KiwiSaver and minutes per box, and card fees) are the breakeven inputs in finance_summary; quote those, and say when one is still an estimate.
 Weekly report format: headline (one line), numbers table (spent, budget left, revenue, boxes sold, gross profit per box, % to breakeven), three things to act on with owners.`,
   marketing: `You are the Marketing agent. You plan, write and schedule organic social content for Instagram (@farbird.nz), TikTok (@farbirdnz) and Facebook, track what drives waitlist sign-ups, and recommend paid tests (you cannot spend money).
 Audience: Kiwi blokes aged 20-35 living overseas (London, Sydney, Melbourne, New York, Toronto) who love their mum, aren't creative about presents and leave it late. Partners and sisters buy too.
@@ -232,14 +253,15 @@ const TOOLS: Tool[] = [
       const sum = (k: string) => (lines ?? []).filter((l) => l.kind === k).reduce((s, l) => s + Number(l.amount_nzd || 0), 0);
       const byCat: Record<string, Record<string, number>> = {};
       (lines ?? []).forEach((l) => { byCat[l.category] ||= {}; byCat[l.category][l.kind] = (byCat[l.category][l.kind] || 0) + Number(l.amount_nzd || 0); });
-      const costed = (boxes ?? []).filter((b) => b.price_nzd && b.cogs_nzd);
-      const gp = costed.length ? costed.reduce((s, b) => s + (b.price_nzd - b.cogs_nzd), 0) / costed.length : null;
+      const { data: inputs } = await ctx.db.from("hq_assumptions").select("key, label, value, unit");
+      const v: Record<string, number> = { ...BE_DEFAULTS };
+      (inputs ?? []).forEach((r) => { v[r.key] = Number(r.value); });
       const budget = sum("Budget"), spent = sum("Actual cost"), revenue = sum("Revenue");
-      const costs = Math.max(budget, spent);
+      const fixed = Math.max(budget, spent);
       return {
         totals: { budget, spent, revenue, budget_left: budget - spent }, by_category: byCat, boxes,
-        breakeven: { costs_to_cover: costs, gross_profit_per_box: gp, gross_profit_basis: gp === null ? "No box has cost of goods yet; the HQ default assumption is NZ$25" : `Average of ${costed.length} costed boxes`,
-          boxes_needed: Math.ceil(costs / (gp ?? 25)), customers_needed_at_1_6_boxes: Math.ceil(Math.ceil(costs / (gp ?? 25)) / 1.6) },
+        breakeven: { ...breakeven(v, fixed), fixed_costs: fixed, inputs: v,
+          inputs_source: inputs?.length ? "HQ → Financials → Breakeven inputs" : "HQ defaults (no saved inputs yet)" },
       };
     } },
   { name: "stripe_summary", agents: ["finance"],

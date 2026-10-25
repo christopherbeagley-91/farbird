@@ -17,7 +17,7 @@ EXISTING TABLES
 hq_tasks (has clickup_url), hq_suppliers, hq_boxes, hq_finance, hq_channels, hq_plan (markdown sections), waitlist, waitlist_people, team_members.
 
 PHASE 1 — CORE HQ (views in a left sidebar; remember last view)
-1. Overview: KPI tiles (signups vs 500 by 8 Nov, people added, referral signups, days to pre-sale 9 Nov, days to last order 12 Dec, tasks done/overdue, spent vs budget, revenue, orders, gross profit). Panels: due in 7 days + overdue; progress by phase; who they're buying for (stock forecast); signups by country; integration health strip.
+1. Overview: KPI tiles (signups vs 500 by 15 Nov, people added, referral signups, days to pre-sale 16 Nov, days to last order 12 Dec, tasks done/overdue, spent vs budget, revenue, orders, gross profit). Panels: due in 7 days + overdue; progress by phase; who they're buying for (stock forecast); signups by country; integration health strip.
 2. Tasks: grouped by phase; filters (workstream, owner, status); search; edit dialog; overdue in crimson; ClickUp link and sync state per task.
 3. Timeline: Gantt by phase, week ticks, today line, colour by status.
 4. Waitlist: signups with the people they're buying for, referrals, UTM source, CSV export.

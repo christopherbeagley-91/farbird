@@ -56,8 +56,12 @@ export const REGISTRY: Tool[] = [
     config: { marketing: { autopilot: true, channels: ["instagram", "tiktok", "facebook"] }, finance: {}, ops: {} } },
 
   // --- Sell and talk to customers ---
+  { key: "shopify", name: "Shopify", category: "Shop", phase: "Before pre-sale", kind: "manual", sort: 9,
+    description: "The shop: product pages, checkout and Shopify Payments in NZD. Orders connector to HQ comes next.",
+    required_secrets: [], sync_every_minutes: 1440, owner: "Chris",
+    account_url: "https://admin.shopify.com", monthly_cost_nzd: 66, cost_note: "Basic, about US$39/mo; cards 3.3% + NZ$0.30 (international)" },
   { key: "stripe", name: "Stripe", category: "Payments", phase: "Before pre-sale", kind: "sync", sort: 10,
-    description: "Pre-sale checkout in NZD. Orders and revenue flow into HQ. Overseas cards 3.5% + NZ$0.30.",
+    description: "Backup only: Shopify Payments replaces Stripe checkout. Keep for HQ revenue sync if needed.",
     required_secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"], sync_every_minutes: 60, owner: "Chris",
     account_url: "https://dashboard.stripe.com", monthly_cost_nzd: 0, cost_note: "Per sale: 3.5% + NZ$0.30" },
   { key: "resend", name: "Resend", category: "Email", phase: "Before pre-sale", kind: "sync", sort: 11,
@@ -89,7 +93,7 @@ export const REGISTRY: Tool[] = [
   { key: "metricool", name: "Metricool", category: "Social scheduling", phase: "Now", kind: "manual", sort: 19,
     description: "Schedules and publishes Instagram, TikTok and Facebook posts for the Marketing agent, and reports results. API needs the Advanced plan; add METRICOOL_API_TOKEN, METRICOOL_USER_ID and METRICOOL_BLOG_ID in Supabase secrets.",
     required_secrets: [], sync_every_minutes: 1440, owner: "Lauren",
-    account_url: "https://app.metricool.com", monthly_cost_nzd: 0, cost_note: "Advanced plan for API; check current price" },
+    account_url: "https://app.metricool.com", monthly_cost_nzd: 114, cost_note: "Advanced plan (API), about US$67/mo billed monthly" },
   { key: "canva", name: "Canva", category: "Design", phase: "Now", kind: "manual", sort: 23,
     description: "Sleeves, cards and social posts. Store design links against boxes and channels.",
     required_secrets: [], sync_every_minutes: 1440, owner: "Lauren",

@@ -177,6 +177,7 @@
   .pill.s-failed { background: #F6D5D9; color: #7D1020; }
   .pill.s-draft { background: #FBEFC4; color: #5E4A07; }
   @media (max-width: 700px) { .agent { padding: 14px; } .ask { flex-direction: column; } }
+.be-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}@media (max-width:760px){.be-grid{grid-template-columns:1fr}}.be-in th{text-align:left}
 </style>
 </head>
 <body>
@@ -191,7 +192,7 @@
 const SUPABASE_URL = "https://fmrabsrgdwqhyxcjnfgt.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QwqBZMs_EqITjZ9hRSI9ig_Cu2Wnc7v";
 const LAST_ORDER = "2026-12-12";
-const PRESALE = "2026-11-09";
+const PRESALE = "2026-11-16";
 const WAITLIST_TARGET = 500;
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const app = document.getElementById("app");
@@ -199,6 +200,7 @@ const app = document.getElementById("app");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 const slug = s => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
 const nzd = n => n == null || n === "" ? "" : "NZ$" + Number(n).toLocaleString("en-NZ", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const nzd2 = n => "NZ$" + Number(n).toLocaleString("en-NZ", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const today = () => new Date().toISOString().slice(0, 10);
 const fmtDate = d => d ? new Date(d + "T00:00:00").toLocaleDateString("en-NZ", { day: "numeric", month: "short" }) : "";
 const daysTo = d => Math.ceil((new Date(d + "T00:00:00") - new Date(today() + "T00:00:00")) / 864e5);
@@ -207,7 +209,7 @@ const md = s => DOMPurify.sanitize(marked.parse(s || ""));
 const pref = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
 
 /* ---------- Table configs: one CRUD engine drives every list ---------- */
-const OWNERS = ["Chris", "Mum", "Lauren", "Lynn", "Emily", "Chris + Mum", "Chris + Lauren", "Lauren + Mum", "Lauren + Lynn", "Lauren + Emily", "All"];
+const OWNERS = ["Chris", "Mum", "Lauren", "Lynn", "Emily", "Chris + Mum", "Chris + Lauren", "Lauren + Mum", "Lauren + Lynn", "Lauren + Emily", "Packer", "Mum + Packer", "All"];
 const T = {
   hq_tasks: {
     label: "task", order: ["due_date", true], group: "phase",
@@ -484,10 +486,10 @@ async function overview() {
 
   document.getElementById("ov").innerHTML = `
     <div class="kpis">
-      <div class="kpi"><b>${wl.length}</b><span>waitlist signups of ${WAITLIST_TARGET} by 8 Nov</span></div>
+      <div class="kpi"><b>${wl.length}</b><span>waitlist signups of ${WAITLIST_TARGET} by 15 Nov</span></div>
       <div class="kpi"><b>${ppl.length}</b><span>people added (future orders)</span></div>
       <div class="kpi"><b>${referred}</b><span>joined via referral</span></div>
-      <div class="kpi"><b>${Math.max(0, daysTo(PRESALE))}</b><span>days to pre-sale (9 Nov)</span></div>
+      <div class="kpi"><b>${Math.max(0, daysTo(PRESALE))}</b><span>days to pre-sale (16 Nov)</span></div>
       <div class="kpi"><b>${Math.max(0, daysTo(LAST_ORDER))}</b><span>days to last order date</span></div>
       <div class="kpi ${overdue.length ? "alert" : ""}"><b>${done}/${tasks.length}</b><span>tasks done${overdue.length ? `, ${overdue.length} overdue` : ""}</span></div>
       <div class="kpi"><b>${nzd(spent)}</b><span>spent of ${nzd(budget)} budget</span></div>
@@ -587,37 +589,86 @@ async function finance() {
   drawBreakeven(tot(B), tot(A), tot(R));
 }
 
+/* ---------- Breakeven: editable inputs in hq_assumptions, fixed costs = Budget lines ---------- */
+const BE_DEFAULTS = [
+  ["avg_price", "Price", "Average price per box, delivered", 89, "NZ$"],
+  ["discount_per_box", "Price", "Average offer discount per box", 5, "NZ$"],
+  ["boxes_per_customer", "Price", "Boxes per customer", 1.6, "boxes"],
+  ["product_cost", "Box costs", "Gifts and treats", 35, "NZ$"],
+  ["base_kit", "Box costs", "Sleeve, box, tissue, card, filler, carton", 8, "NZ$"],
+  ["courier", "Box costs", "Courier per parcel", 11, "NZ$"],
+  ["pack_wage", "Packing", "Packer hourly wage", 20, "NZ$/hr"],
+  ["pack_holiday_pct", "Packing", "Holiday pay", 8, "%"],
+  ["pack_kiwisaver_pct", "Packing", "KiwiSaver employer contribution", 3.5, "%"],
+  ["pack_minutes", "Packing", "Minutes per box", 10, "min"],
+  ["fee_pct", "Card fees", "Shopify Payments, international card", 3.3, "%"],
+  ["fee_fixed", "Card fees", "Per-order card fee", 0.3, "NZ$"],
+].map(([key, grp, label, value, unit], i) => ({ key, grp, label, value, unit, sort: i, notes: "" }));
+
+function breakeven(v, fixed) {
+  const net = v.avg_price - v.discount_per_box;
+  const packHour = v.pack_wage * (1 + v.pack_holiday_pct / 100 + v.pack_kiwisaver_pct / 100);
+  const packing = packHour * v.pack_minutes / 60;
+  const fees = net * v.fee_pct / 100 + v.fee_fixed;
+  const costs = [["Gifts and treats", v.product_cost], ["Box kit and print", v.base_kit], ["Courier", v.courier], ["Packing labour", packing], ["Card fees", fees]];
+  const variable = costs.reduce((s, [, n]) => s + n, 0);
+  const gp = net - variable;
+  const boxes = gp > 0 ? Math.ceil(fixed / gp) : null;
+  return { net, packHour, packing, fees, costs, variable, gp, boxes, customers: boxes ? Math.ceil(boxes / Math.max(1, v.boxes_per_customer)) : null };
+}
+
 async function drawBreakeven(budget, spent, revenue) {
-  const { data: boxes } = await sb.from("hq_boxes").select("price_nzd, cogs_nzd, status");
-  const priced = (boxes || []).filter(b => b.price_nzd && b.cogs_nzd);
-  const avgGp = priced.length ? priced.reduce((s, b) => s + (b.price_nzd - b.cogs_nzd), 0) / priced.length : 25;
-  const avgPrice = (boxes || []).filter(b => b.price_nzd).reduce((s, b, _, a) => s + b.price_nzd / a.length, 0) || 89;
   const el = document.getElementById("be");
-  const saved = { gp: Number(pref.get("be_gp")) || Math.round(avgGp * 100) / 100, per: Number(pref.get("be_per")) || 1.6 };
+  const [{ data: rows, error }, { data: boxes }] = await Promise.all([
+    sb.from("hq_assumptions").select("*").order("sort"),
+    sb.from("hq_boxes").select("price_nzd, cogs_nzd")
+  ]);
+  const inputs = (rows && rows.length ? rows : BE_DEFAULTS).map(r => ({ ...r, value: Number(r.value) }));
+  const canSave = !error && rows && rows.length;
+  const costed = (boxes || []).filter(b => b.cogs_nzd);
+  const boxCogs = costed.length ? costed.reduce((s, b) => s + Number(b.cogs_nzd), 0) / costed.length : null;
+  const fixed = Math.max(budget, spent);
+  const groups = [...new Set(inputs.map(r => r.grp))];
   el.innerHTML = `<h2>Breakeven</h2>
-    <p class="note" style="margin:0 0 12px">Costs to cover = the larger of budget or actual spend. ${priced.length ? `Gross profit starts from your ${priced.length} costed box${priced.length > 1 ? "es" : ""}.` : "Add COGS to boxes to replace the NZ$25 starting estimate."}</p>
-    <div class="toolbar">
-      <label class="note">Gross profit per box (NZ$) <input id="beGp" type="number" step="0.5" min="1" value="${saved.gp}" style="width:90px"></label>
-      <label class="note">Boxes per customer <input id="bePer" type="number" step="0.1" min="1" value="${saved.per}" style="width:70px"></label>
+    <p class="note" style="margin:0 0 12px">Fixed costs are the Budget lines below (or actual spend, if higher). Change any input and the maths updates${canSave ? " and saves for the whole team" : ""}.${canSave ? "" : " <b>Inputs aren't saving yet: the hq_assumptions table is missing.</b>"}${boxCogs ? ` Boxes tab average COGS: ${nzd2(boxCogs)}.` : ""}</p>
+    <div class="be-grid">
+      <div class="tablewrap" style="border:0"><table class="be-in"><tbody>
+        ${groups.map(g => `<tr style="cursor:default"><th colspan="2">${esc(g)}</th></tr>` + inputs.filter(r => r.grp === g).map(r => `
+          <tr style="cursor:default"><td>${esc(r.label)}${r.notes ? `<div class="note">${esc(r.notes)}</div>` : ""}</td>
+          <td class="num"><label style="white-space:nowrap"><input data-be="${esc(r.key)}" type="number" step="any" min="0" value="${r.value}" style="width:84px;text-align:right"> <span class="note">${esc(r.unit)}</span></label></td></tr>`).join("")).join("")}
+      </tbody></table></div>
+      <div><div class="tablewrap" style="border:0"><table><tbody id="beBox"></tbody></table></div><p class="note" id="beSave"></p></div>
     </div>
-    <div class="kpis" id="beOut" style="margin:0"></div>`;
+    <div class="kpis" id="beOut" style="margin:12px 0 0"></div>`;
+  const vals = () => Object.fromEntries(inputs.map(r => [r.key, Math.max(0, Number(el.querySelector(`[data-be="${r.key}"]`).value) || 0)]));
   const calc = () => {
-    const gp = Math.max(1, Number(document.getElementById("beGp").value) || 1);
-    const per = Math.max(1, Number(document.getElementById("bePer").value) || 1);
-    pref.set("be_gp", gp); pref.set("be_per", per);
-    const cost = Math.max(budget, spent);
-    const boxesNeeded = Math.ceil(cost / gp);
-    const customers = Math.ceil(boxesNeeded / per);
-    const soldEst = Math.round(revenue / avgPrice);
-    const pct = Math.min(100, Math.round((soldEst / boxesNeeded) * 100));
+    const v = vals(), b = breakeven(v, fixed);
+    const soldEst = b.net > 0 ? Math.round(revenue / b.net) : 0;
+    const pct = b.boxes ? Math.min(100, Math.round(soldEst / b.boxes * 100)) : 0;
+    document.getElementById("beBox").innerHTML = `
+      <tr style="cursor:default"><th>Per box</th><th class="num">NZD</th></tr>
+      <tr style="cursor:default"><td>Price</td><td class="num">${nzd2(v.avg_price)}</td></tr>
+      <tr style="cursor:default"><td>Less offer discount</td><td class="num">−${nzd2(v.discount_per_box)}</td></tr>
+      ${b.costs.map(([k, n]) => `<tr style="cursor:default"><td>Less ${esc(k.toLowerCase())}${k === "Packing labour" ? ` <span class="note">(${nzd2(b.packHour)}/hr)</span>` : ""}</td><td class="num">−${nzd2(n)}</td></tr>`).join("")}
+      <tr style="cursor:default"><td><b>Gross profit per box</b></td><td class="num ${b.gp < 20 ? "overdue" : ""}"><b>${nzd2(b.gp)}</b></td></tr>`;
     document.getElementById("beOut").innerHTML = `
-      <div class="kpi"><b>${nzd(cost)}</b><span>costs to cover</span></div>
-      <div class="kpi"><b>${boxesNeeded}</b><span>boxes to break even</span></div>
-      <div class="kpi"><b>${customers}</b><span>customers at ${per} boxes each</span></div>
-      <div class="kpi"><b>${pct}%</b><span>of the way (about ${soldEst} boxes sold so far)</span></div>`;
+      <div class="kpi"><b>${nzd(fixed)}</b><span>fixed costs to cover</span></div>
+      <div class="kpi ${b.gp < 20 ? "alert" : ""}"><b>${nzd2(b.gp)}</b><span>gross profit per box (target NZ$20+)</span></div>
+      <div class="kpi"><b>${b.boxes ?? "–"}</b><span>boxes to break even</span></div>
+      <div class="kpi"><b>${b.customers ?? "–"}</b><span>customers at ${v.boxes_per_customer} boxes each</span></div>
+      <div class="kpi"><b>${pct}%</b><span>of the way (about ${soldEst} boxes sold)</span></div>`;
   };
-  document.getElementById("beGp").oninput = calc;
-  document.getElementById("bePer").oninput = calc;
+  let timer;
+  el.querySelectorAll("[data-be]").forEach(inp => inp.oninput = () => {
+    calc();
+    if (!canSave) return;
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const v = vals();
+      const { error } = await sb.from("hq_assumptions").upsert(inputs.map(r => ({ key: r.key, grp: r.grp, label: r.label, unit: r.unit, sort: r.sort, notes: r.notes, value: v[r.key] })));
+      document.getElementById("beSave").textContent = error ? "Couldn't save: " + error.message : "Saved " + new Date().toLocaleTimeString("en-NZ", { hour: "numeric", minute: "2-digit" });
+    }, 600);
+  });
   calc();
 }
 

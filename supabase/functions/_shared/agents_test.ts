@@ -116,3 +116,12 @@ Deno.test("pushApproved schedules posts with media in Metricool and waits on the
     ["METRICOOL_API_TOKEN", "METRICOOL_USER_ID", "METRICOOL_BLOG_ID"].forEach((k) => Deno.env.delete(k));
   }
 });
+
+Deno.test("breakeven: defaults with the Christmas fixed costs", async () => {
+  const { breakeven, BE_DEFAULTS } = await import("./agents.ts");
+  const b = breakeven(BE_DEFAULTS, 2776.05);
+  if (b.per_box.packing !== 3.72) throw new Error(`packing ${b.per_box.packing}`);
+  if (b.gross_profit_per_box !== 23.21) throw new Error(`gp ${b.gross_profit_per_box}`);
+  if (b.boxes_needed !== 120 || b.customers_needed !== 75) throw new Error(`boxes ${b.boxes_needed} customers ${b.customers_needed}`);
+  if (breakeven({ ...BE_DEFAULTS, avg_price: 50 }, 1000).boxes_needed !== null) throw new Error("negative GP should give null");
+});
