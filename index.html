@@ -8,7 +8,7 @@
 <meta property="og:title" content="Mum will think you planned this">
 <meta property="og:description" content="NZ gift boxes with her name on the sleeve. For Kiwis abroad who leave it late.">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Organization", "name": "Farbird", "url": "https://christopherbeagley-91.github.io/farbird/", "description": "Personalised New Zealand gift boxes for Kiwis living overseas. Packed in Auckland with the recipient's name printed on the sleeve and delivered anywhere in New Zealand, with reminders for NZ dates.", "areaServed": "NZ", "slogan": "Sorted before you forget.", "sameAs": ["https://www.instagram.com/farbird.nz/", "https://www.tiktok.com/@farbirdnz"]}</script>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Where does Farbird deliver?", "acceptedAnswer": {"@type": "Answer", "text": "Anywhere in New Zealand. The sender can live anywhere; their card is charged in their own currency."}}, {"@type": "Question", "name": "How much does a Farbird box cost?", "acceptedAnswer": {"@type": "Answer", "text": "Boxes start at NZ$49 delivered. Christmas boxes are around NZ$89."}}, {"@type": "Question", "name": "When is the last day to order a Christmas gift box to New Zealand from Farbird in 2026?", "acceptedAnswer": {"@type": "Answer", "text": "Saturday 12 December 2026. Pre-sale opens to the waitlist on 16 November 2026."}}, {"@type": "Question", "name": "How do I send a Christmas present to my mum in New Zealand from overseas?", "acceptedAnswer": {"@type": "Answer", "text": "Order a Farbird box online. Each box is packed in Auckland with her name printed on the sleeve and your card inside, and delivered anywhere in NZ, so there is no international postage or customs."}}, {"@type": "Question", "name": "When is Mother's Day in New Zealand?", "acceptedAnswer": {"@type": "Answer", "text": "The second Sunday in May. Father's Day in New Zealand is the first Sunday in September, which is different from the UK, Australia and the US."}}, {"@type": "Question", "name": "What if I forget to order?", "acceptedAnswer": {"@type": "Answer", "text": "Farbird sends reminders on NZ dates for Christmas, birthdays, Mother's Day and Father's Day."}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Where does Farbird deliver?", "acceptedAnswer": {"@type": "Answer", "text": "Anywhere in New Zealand. The sender can live anywhere; their card is charged in their own currency."}}, {"@type": "Question", "name": "How much does a Farbird box cost?", "acceptedAnswer": {"@type": "Answer", "text": "Boxes start at NZ$59 delivered. Christmas boxes are around NZ$89."}}, {"@type": "Question", "name": "When is the last day to order a Christmas gift box to New Zealand from Farbird in 2026?", "acceptedAnswer": {"@type": "Answer", "text": "Saturday 12 December 2026. Pre-sale opens to the waitlist on 16 November 2026."}}, {"@type": "Question", "name": "How do I send a Christmas present to my mum in New Zealand from overseas?", "acceptedAnswer": {"@type": "Answer", "text": "Order a Farbird box online. Each box is packed in Auckland with her name printed on the sleeve and your card inside, and delivered anywhere in NZ, so there is no international postage or customs."}}, {"@type": "Question", "name": "When is Mother's Day in New Zealand?", "acceptedAnswer": {"@type": "Answer", "text": "The second Sunday in May. Father's Day in New Zealand is the first Sunday in September, which is different from the UK, Australia and the US."}}, {"@type": "Question", "name": "What if I forget to order?", "acceptedAnswer": {"@type": "Answer", "text": "Farbird sends reminders on NZ dates for Christmas, birthdays, Mother's Day and Father's Day."}}]}</script>
 <link rel="canonical" href="https://christopherbeagley-91.github.io/farbird/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -83,7 +83,8 @@
   input:focus, select:focus { border-color: var(--ink); outline: 2px solid var(--gilt-deep); outline-offset: 2px; }
   .person { padding: 18px 0 20px; border-top: 1px solid var(--line-strong); position: relative; }
   .person + .person { margin-top: 4px; }
-  .remove { position: absolute; right: 0; top: 14px; background: none; border: 0; font: 500 13px var(--ui); color: var(--ink-soft); cursor: pointer; padding: 6px; text-decoration: underline; }
+  .remove { display: block; margin: -6px 0 8px auto; background: none; border: 0; font: 500 13px var(--ui); color: var(--ink-soft); cursor: pointer; padding: 6px 0; text-decoration: underline; }
+  .remove[hidden] { display: none; }
   .bday { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
   .add, .submit, .copy { font: 600 14px/1 var(--ui); letter-spacing: .12em; text-transform: uppercase; border-radius: 2px; cursor: pointer; }
   .add { background: transparent; border: 1px solid var(--line-strong); color: var(--ink); padding: 15px 14px; width: 100%; }
@@ -126,12 +127,12 @@
   .price { font-size: 19px; margin: 18px 0 0; }
 
   /* Flash band */
-  section.flash { background: var(--kowhai); border-top: 0; }
+  section.flash { background: var(--jandal); color: var(--ivory); border-top: 0; }
   .flash-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 72px; align-items: center; }
-  .flash .over { color: var(--ink); }
+  .flash .over { color: var(--ivory); }
   .flash h2.section { max-width: 11em; }
-  .inside { list-style: none; margin: 30px 0 0; padding: 0; border-top: 1px solid var(--ink); }
-  .inside li { padding: 14px 0; border-bottom: 1px solid rgba(27,26,23,.25); display: grid; grid-template-columns: 9em minmax(0,1fr); gap: 16px; }
+  .inside { list-style: none; margin: 30px 0 0; padding: 0; border-top: 1px solid var(--ivory); }
+  .inside li { padding: 14px 0; border-bottom: 1px solid rgba(246,241,231,.3); display: grid; grid-template-columns: 9em minmax(0,1fr); gap: 16px; }
   .inside b { font: 500 12px/1.6 var(--ui); letter-spacing: .16em; text-transform: uppercase; }
   .inside-shot { position: relative; aspect-ratio: 4/5; background: var(--ivory); display: grid; place-items: center; }
   .inside-shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -140,7 +141,7 @@
   .card-mock i { display: block; margin-top: 10px; font: italic 400 16px var(--text); }
 
   /* Dates */
-  section.paua { background: var(--paua); color: var(--ivory); border-top: 0; }
+  section.paua { background: var(--bush); color: var(--ivory); border-top: 0; }
   section.paua .over, section.paua .sub { color: var(--ivory); }
   section.paua .sub { opacity: .85; }
   .dates { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 72px; align-items: start; }
@@ -293,7 +294,7 @@
         <li><figure><div class="shot"><div class="tile" style="background:var(--musk);color:var(--ink)">AROHA</div><img src="img/box-partner.jpg" alt="The Partner box: a musk-pink sleeve on an ivory box" loading="lazy" onerror="this.remove()"><img class="open" src="img/box-partner-open.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="peek">Peek inside</span></div><h3>Long-distance partner</h3><p>Because a video call isn't a present.</p></figure></li>
         <li><figure><div class="shot"><div class="tile" style="background:var(--jandal);color:var(--ivory)">NICO</div><img src="img/box-kids.jpg" alt="The Kids box: a jandal-blue sleeve on an ivory box" loading="lazy" onerror="this.remove()"><img class="open" src="img/box-kids-open.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="peek">Peek inside</span></div><h3>The kids</h3><p>Nieces, nephews, godkids. Instant favourite uncle.</p></figure></li>
       </ul>
-      <p class="price"><strong>From NZ$49, delivered anywhere in New Zealand.</strong> Christmas boxes are around NZ$89. Final contents and prices land with pre-sale.</p>
+      <p class="price"><strong>From NZ$59, delivered anywhere in New Zealand.</strong> Christmas boxes are around NZ$89. Final contents and prices land with pre-sale.</p>
       <p class="note">Concept boxes. The real ones are being made in Auckland now, and we'll swap these for photos of them before pre-sale.</p>
     </div>
   </section>
@@ -338,7 +339,7 @@
       <div><p class="over">Questions</p><h2 class="section">The fine print, not so fine.</h2></div>
       <dl class="qa">
         <div><dt>Where do you deliver?</dt><dd>Anywhere in New Zealand. You can live anywhere; your card is charged in your own currency.</dd></div>
-        <div><dt>What does it cost?</dt><dd>Boxes start at NZ$49 delivered. Christmas boxes are around NZ$89. The waitlist is free, and early access gets you first pick before boxes sell out.</dd></div>
+        <div><dt>What does it cost?</dt><dd>Boxes start at NZ$59 delivered. Christmas boxes are around NZ$89. The waitlist is free, and early access gets you first pick before boxes sell out.</dd></div>
         <div><dt>When can I order?</dt><dd>Pre-sale opens to the waitlist on 16 November, then to everyone 72 hours later. The last Christmas order date is Saturday 12 December.</dd></div>
         <div><dt>Can I add a photo?</dt><dd>Yes. Upload one when you order and we'll print it on a card that sits on top of the tissue. We delete it once the box is delivered.</dd></div>
         <div><dt>What if I forget to order?</dt><dd>We'll remind you. That's sort of the whole point.</dd></div>
@@ -430,6 +431,10 @@
     const monSel = node.querySelector('[data-k="birthday_month"]');
     MONTHS.forEach((m, i) => monSel.add(new Option(m, i + 1)));
     if (rel) node.querySelector('[data-k="relationship"]').value = rel;
+    const PH = { Mum: "Sandra", Dad: "Graham", Sibling: "Kate", Partner: "Aroha", Kids: "Nico" };
+    const nameIn = node.querySelector('[data-k="first_name"]');
+    const setPh = () => nameIn.placeholder = PH[node.querySelector('[data-k="relationship"]').value] || "Their name";
+    setPh(); node.querySelector('[data-k="relationship"]').addEventListener("change", setPh);
     node.querySelector(".remove").addEventListener("click", () => {
       if (peopleEl.children.length > 1) { node.remove(); updateSleeve(); }
     });
