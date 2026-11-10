@@ -25,8 +25,9 @@ jobs:
       - name: Stage site
         run: |
           mkdir _site
-          cp index.html _site/
+          cp index.html privacy.html robots.txt sitemap.xml llms.txt _site/
           cp -r hq _site/hq
+          cp -r img _site/img
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

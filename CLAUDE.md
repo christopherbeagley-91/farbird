@@ -14,7 +14,7 @@ Christmas 2026 test. Waitlist from 31 Oct, pre-sale 16 Nov (500 signups by 15 No
 - Emily (Lauren's friend): design and logo
 
 ## Repo layout
-- `index.html` — public waitlist page (static, deployed to GitHub Pages by `.github/workflows/pages.yml`). Writes only through the `join_waitlist` RPC.
+- `index.html` — public waitlist page (static, deployed to GitHub Pages by `.github/workflows/pages.yml`, which copies only listed files into `_site`: add any new public file or folder there). Writes only through the `join_waitlist` RPC.
 - `hq/index.html` — Farbird HQ, the team-only project manager / CRM (tasks, timeline, waitlist, boxes, suppliers, financials, marketing, plan). Magic-link sign-in; access gated by `public.team_members`.
 - `supabase/migrations/` — schema as applied to the live project.
 - `supabase/functions/` — Edge Functions. `_shared/` holds auth, secrets, logging, retry, webhook and dispatch helpers; `integrations-status` (HQ status/Sync now/self-test) and `integrations-cron` (pg_cron every 5 min).
