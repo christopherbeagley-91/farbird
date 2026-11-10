@@ -1,0 +1,42 @@
+# Farbird: everyone welcome, AI assistants included.
+User-agent: *
+Allow: /
+Disallow: /hq/
+
+User-agent: GPTBot
+Allow: /
+Disallow: /hq/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /hq/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /hq/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /hq/
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /hq/
+
+User-agent: Claude-User
+Allow: /
+Disallow: /hq/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /hq/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /hq/
+
+User-agent: Meta-ExternalAgent
+Allow: /
+Disallow: /hq/
+
+Sitemap: https://farbird.co/sitemap.xml

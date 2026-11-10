@@ -1,6 +1,6 @@
 # Farbird
 
-Personalised, PR-style NZ gift boxes for Kiwis living overseas, sent to family back home, with reminders so nobody misses a date. Name locked as Farbird (NZ company name reserved Oct 2026; IPONZ trademark not yet filed). Domain farbird.co (GoDaddy; hello@farbird.co live). Handles: @farbirdco on Instagram, TikTok and Reddit (YouTube, Substack and X still to claim). EXPAT is the future platform / member-club sub-brand.
+Personalised, PR-style NZ gift boxes for Kiwis living overseas, sent to family back home, with reminders so nobody misses a date. Name locked as Farbird (NZ company name reserved Oct 2026; IPONZ trademark not yet filed). Domain farbird.co (GoDaddy DNS → GitHub Pages, live 9 Nov 2026; hello@farbird.co on Google Workspace). robots.txt (AI crawlers allowed, /hq/ disallowed), sitemap.xml and llms.txt at the root. Handles: @farbirdco on Instagram, TikTok and Reddit (YouTube, Substack and X still to claim). EXPAT is the future platform / member-club sub-brand.
 
 ## Status (Oct 2026)
 Christmas 2026 test. Waitlist from 31 Oct, pre-sale 16 Nov (500 signups by 15 Nov), last order date Sat 12 Dec, go/kill 16 Jan 2027.
