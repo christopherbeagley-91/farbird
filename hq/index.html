@@ -638,7 +638,7 @@ function drawMatrix(items, budget) {
   const over = BOXES.filter(([b]) => sum[b] > budget + 0.005).length;
   const m = document.getElementById("matrix");
   m.innerHTML = `<h2>Box matrix</h2>
-    <p class="note" style="margin:0 0 12px">Items for each box should cost <b>${nzd2(budget)}</b> or less in total (the gifts-and-treats input under Financials → Breakeven), leaving room for packing, courier and the profit target. Costs are estimates at about half of NZ retail until quotes arrive. Each gap is counted at its target cost. <b>Bold</b> = current pick. Click any item to edit it.</p>
+    <p class="note" style="margin:0 0 12px">Items for each box should cost <b>${nzd2(budget)}</b> or less in total (the gifts-and-treats input under Financials → Breakeven), leaving room for packing, courier and the profit target. <b>Everything should feel like it came from abroad:</b> no NZ-made products, and food only through an MPI-registered NZ importer. Costs are estimates at about half of NZ retail until quotes arrive. Each gap is counted at its target cost. <b>Bold</b> = current pick. Click any item to edit it.</p>
     <div class="kpis" style="margin-bottom:12px">
       <div class="kpi ${totalGaps ? "alert" : ""}"><b>${totalGaps}</b><span>slots with no pick yet</span></div>
       <div class="kpi ${over ? "alert" : ""}"><b>${over} of ${BOXES.length}</b><span>boxes over the ${nzd2(budget)} budget</span></div>
