@@ -619,17 +619,20 @@ function drawMatrix(items, budget) {
   const sum = { }, gaps = { };
   const cellHtml = (box, slot) => {
     const here = items.filter(i => i.box === box && i.slot === slot);
-    const pick = here.find(i => i.pick === "Pick");
+    const picks = here.filter(i => i.pick === "Pick").sort((x, y) => x.item.localeCompare(y.item));
+    const pick = picks[0];
     const opts = here.filter(i => i.pick === "Option");
     const gapRows = here.filter(i => i.pick === "Gap");
-    const cost = pick?.est_cost_nzd != null ? Number(pick.est_cost_nzd) : target[slot];
+    // Him/her variants: cost the slot at the dearer pick.
+    const costs = picks.map(i => i.est_cost_nzd).filter(v => v != null).map(Number);
+    const cost = costs.length ? Math.max(...costs) : target[slot];
     sum[box] = (sum[box] || 0) + cost;
     if (!pick) gaps[box] = (gaps[box] || 0) + 1;
     const line = (i, cls) => `<button class="mx-item ${cls}" data-item="${i.id}">
         <span>${esc(i.item)}</span>
         <small>${esc([i.supplier, i.origin].filter(Boolean).join(" · "))}${i.est_cost_nzd != null ? ` · <b class="${Number(i.est_cost_nzd) > target[slot] ? "overdue" : ""}">${nzd2(i.est_cost_nzd)}</b>` : ""}</small></button>`;
     return `<td class="${pick ? "" : "mx-gap"}">
-      ${pick ? line(pick, "pick") : `<div class="mx-flag">Gap: research</div>${gapRows.map(g => `<button class="mx-item" data-item="${g.id}"><small>${esc(g.notes || g.item)}</small></button>`).join("")}`}
+      ${pick ? picks.map(i => line(i, "pick")).join("") : `<div class="mx-flag">Gap: research</div>${gapRows.map(g => `<button class="mx-item" data-item="${g.id}"><small>${esc(g.notes || g.item)}</small></button>`).join("")}`}
       ${opts.map(o => line(o, "opt")).join("")}
       <button class="mx-add" data-box="${box}" data-slot="${slot}">+ Add</button></td>`;
   };
@@ -638,7 +641,7 @@ function drawMatrix(items, budget) {
   const over = BOXES.filter(([b]) => sum[b] > budget + 0.005).length;
   const m = document.getElementById("matrix");
   m.innerHTML = `<h2>Box matrix</h2>
-    <p class="note" style="margin:0 0 12px">Items for each box should cost <b>${nzd2(budget)}</b> or less in total (the gifts-and-treats input under Financials → Breakeven), leaving room for packing, courier and the profit target. <b>Everything should feel like it came from abroad:</b> no NZ-made products, and food only through an MPI-registered NZ importer. Costs are estimates at about half of NZ retail until quotes arrive. Each gap is counted at its target cost. <b>Bold</b> = current pick. Click any item to edit it.</p>
+    <p class="note" style="margin:0 0 12px">Items for each box should cost <b>${nzd2(budget)}</b> or less in total (the gifts-and-treats input under Financials → Breakeven), leaving room for packing, courier and the profit target. <b>Everything should feel like it came from abroad:</b> no NZ-made products, and food only through an MPI-registered NZ importer. Costs are estimates at about half of NZ retail until quotes arrive. Each gap is counted at its target cost. <b>Bold</b> = current pick; where a slot has a for-her and a for-him pick, the dearer one counts. Click any item to edit it.</p>
     <div class="kpis" style="margin-bottom:12px">
       <div class="kpi ${totalGaps ? "alert" : ""}"><b>${totalGaps}</b><span>slots with no pick yet</span></div>
       <div class="kpi ${over ? "alert" : ""}"><b>${over} of ${BOXES.length}</b><span>boxes over the ${nzd2(budget)} budget</span></div>
