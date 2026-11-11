@@ -74,6 +74,22 @@
   .pill.s-in-progress, .pill.s-sampling, .pill.s-quoted, .pill.s-sourcing, .pill.s-sampled { background: #FBEFC4; color: #5E4A07; }
   .pill.s-blocked, .pill.s-rejected { background: #F6D5D9; color: #7D1020; }
   .overdue { color: var(--crimson); font-weight: 600; }
+  table.mx { min-width: 860px; }
+  table.mx th[scope="row"] { color: var(--ink); width: 130px; white-space: normal; }
+  table.mx td { width: 18%; }
+  .mx-box { display: inline-block; padding: 3px 10px; font-weight: 700; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+  .mx-item { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 4px 0 8px; cursor: pointer; color: var(--ink); font: inherit; }
+  .mx-item.pick span { font-weight: 700; }
+  .mx-item.opt { color: var(--soft); }
+  .mx-item small { display: block; color: var(--soft); font-size: 12px; line-height: 1.35; }
+  .mx-item:hover span { text-decoration: underline; }
+  td.mx-gap { background: #FDECEE; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) td.mx-gap { background: #3A1E24; } }
+  :root[data-theme="dark"] td.mx-gap { background: #3A1E24; }
+  .mx-flag { color: var(--crimson); font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+  .mx-add { background: none; border: 0; padding: 0; color: var(--soft); font-size: 12px; cursor: pointer; text-decoration: underline; }
+  .pill.s-pick { background: #DCEBD6; color: #2C4524; }
+  .pill.s-gap { background: #F6D5D9; color: #7D1020; }
   .muted { color: var(--soft); }
   .empty { padding: 32px; text-align: center; color: var(--soft); }
 
@@ -270,6 +286,20 @@ const T = {
       { k: "items", label: "Contents", type: "textarea" },
       { k: "status", label: "Status", type: "select", opts: ["Concept", "Sourcing", "Sampled", "Live", "Retired"], pill: true },
       { k: "notes", label: "Notes", type: "textarea", hide: true }
+    ]
+  },
+  hq_box_items: {
+    label: "box item", order: ["box", true], filters: ["box", "slot", "pick", "supplier"],
+    fields: [
+      { k: "box", label: "Box", type: "select", opts: ["Mum", "Dad", "Sibling", "Partner", "Kids"], req: true },
+      { k: "slot", label: "Slot", type: "select", opts: ["Hero", "Small", "Perishable"], req: true },
+      { k: "pick", label: "Status", type: "select", opts: ["Pick", "Option", "Gap"], pill: true, req: true },
+      { k: "item", label: "Item", req: true },
+      { k: "supplier", label: "Supplier" },
+      { k: "origin", label: "Made in" },
+      { k: "rrp_nzd", label: "NZ retail", type: "number", money: true },
+      { k: "est_cost_nzd", label: "Est. cost", type: "number", money: true },
+      { k: "notes", label: "Notes", type: "textarea" }
     ]
   },
   hq_finance: {
@@ -562,7 +592,64 @@ async function waitlist() {
   };
 }
 
-async function boxes() { await listView("hq_boxes", "Boxes", "The box range, prices and cost of goods. Target at least NZ$20 gross profit per box."); }
+const BOXES = [
+  ["Mum", "Mum", "Sandra", "#C8102E", "#fff"], ["Dad", "Dad", "Graham", "#0B6E4F", "#fff"], ["Sibling", "Sibling", "Kate", "#F5C518", "#1B1A17"],
+  ["Partner", "Partner", "Aroha", "#F4A3C4", "#1B1A17"], ["Kids", "Kids", "Nico", "#1F5FBF", "#fff"]
+];
+// Share of the gifts-and-treats budget (Breakeven input) each slot should cost.
+const SLOTS = [["Hero", "Hero item", 0.55], ["Small", "Smaller item", 0.25], ["Perishable", "Perishable (food, chocolate)", 0.20]];
+async function boxes() {
+  main().innerHTML = `<h1>Boxes</h1><p class="sub">What goes in each box: a hero item, a smaller item and a perishable treat. Target at least NZ$20 gross profit per box.</p>
+    <div class="panel" id="matrix"><p class="note">Loading the box matrix…</p></div>
+    <h2>Box range</h2><div id="tbl"></div>
+    <h2 style="margin-top:24px">All shortlisted items</h2><div id="items"></div>`;
+  const [rows, items, { data: asm }] = await Promise.all([
+    load("hq_boxes"),
+    sb.from("hq_box_items").select("*").then(r => r.error ? null : (state.cache.hq_box_items = r.data)),
+    sb.from("hq_assumptions").select("value").eq("key", "product_cost").maybeSingle()
+  ]);
+  drawList("hq_boxes", rows);
+  const m = document.getElementById("matrix");
+  if (!items) { m.innerHTML = `<p class="note"><b>The box matrix isn't set up yet:</b> the hq_box_items table is missing.</p>`; document.getElementById("items").remove(); return; }
+  drawList("hq_box_items", items, "items");
+  drawMatrix(items, Number(asm?.value ?? BE_DEFAULTS.find(r => r.key === "product_cost").value));
+}
+function drawMatrix(items, budget) {
+  const target = Object.fromEntries(SLOTS.map(([k, , share]) => [k, Math.round(budget * share * 100) / 100]));
+  const sum = { }, gaps = { };
+  const cellHtml = (box, slot) => {
+    const here = items.filter(i => i.box === box && i.slot === slot);
+    const pick = here.find(i => i.pick === "Pick");
+    const opts = here.filter(i => i.pick === "Option");
+    const gapRows = here.filter(i => i.pick === "Gap");
+    const cost = pick?.est_cost_nzd != null ? Number(pick.est_cost_nzd) : target[slot];
+    sum[box] = (sum[box] || 0) + cost;
+    if (!pick) gaps[box] = (gaps[box] || 0) + 1;
+    const line = (i, cls) => `<button class="mx-item ${cls}" data-item="${i.id}">
+        <span>${esc(i.item)}</span>
+        <small>${esc([i.supplier, i.origin].filter(Boolean).join(" · "))}${i.est_cost_nzd != null ? ` · <b class="${Number(i.est_cost_nzd) > target[slot] ? "overdue" : ""}">${nzd2(i.est_cost_nzd)}</b>` : ""}</small></button>`;
+    return `<td class="${pick ? "" : "mx-gap"}">
+      ${pick ? line(pick, "pick") : `<div class="mx-flag">Gap: research</div>${gapRows.map(g => `<button class="mx-item" data-item="${g.id}"><small>${esc(g.notes || g.item)}</small></button>`).join("")}`}
+      ${opts.map(o => line(o, "opt")).join("")}
+      <button class="mx-add" data-box="${box}" data-slot="${slot}">+ Add</button></td>`;
+  };
+  const body = SLOTS.map(([k, label]) => `<tr style="cursor:default"><th scope="row">${label}<div class="note">target ${nzd2(target[k])}</div></th>${BOXES.map(([b]) => cellHtml(b, k)).join("")}</tr>`).join("");
+  const totalGaps = Object.values(gaps).reduce((a, b) => a + b, 0);
+  const over = BOXES.filter(([b]) => sum[b] > budget + 0.005).length;
+  const m = document.getElementById("matrix");
+  m.innerHTML = `<h2>Box matrix</h2>
+    <p class="note" style="margin:0 0 12px">Items for each box should cost <b>${nzd2(budget)}</b> or less in total (the gifts-and-treats input under Financials → Breakeven), leaving room for packing, courier and the profit target. Costs are estimates at about half of NZ retail until quotes arrive. Each gap is counted at its target cost. <b>Bold</b> = current pick. Click any item to edit it.</p>
+    <div class="kpis" style="margin-bottom:12px">
+      <div class="kpi ${totalGaps ? "alert" : ""}"><b>${totalGaps}</b><span>slots with no pick yet</span></div>
+      <div class="kpi ${over ? "alert" : ""}"><b>${over} of ${BOXES.length}</b><span>boxes over the ${nzd2(budget)} budget</span></div>
+    </div>
+    <div class="tablewrap" style="border:0"><table class="mx"><thead><tr><th></th>${BOXES.map(([b, label, who, bg, fg]) => `<th><span class="mx-box" style="background:${bg};color:${fg}">${label}</span><div class="note">${who}</div></th>`).join("")}</tr></thead>
+      <tbody>${body}
+      <tr style="cursor:default"><th scope="row">Estimated items cost</th>${BOXES.map(([b]) => `<td class="num"><b class="${sum[b] > budget + 0.005 ? "overdue" : ""}">${nzd2(sum[b])}</b><div class="note">${sum[b] > budget + 0.005 ? `${nzd2(sum[b] - budget)} over` : `${nzd2(budget - sum[b])} spare`}${gaps[b] ? ` · ${gaps[b]} gap${gaps[b] > 1 ? "s" : ""}` : ""}</div></td>`).join("")}</tr>
+      </tbody></table></div>`;
+  m.querySelectorAll("[data-item]").forEach(b => b.onclick = () => editRow("hq_box_items", items.find(i => i.id === b.dataset.item)));
+  m.querySelectorAll(".mx-add").forEach(b => b.onclick = () => editRow("hq_box_items", { box: b.dataset.box, slot: b.dataset.slot, pick: "Option" }));
+}
 async function suppliers() { await listView("hq_suppliers", "Suppliers", "NZ and China suppliers from first contact to approved."); }
 
 async function finance() {
