@@ -8,7 +8,12 @@
   window.sentryOnLoad = function () {
     Sentry.init({
       environment: /(^|\.)farbird\.co$/.test(location.hostname) ? "production" : "development",
-      sendDefaultPii: false
+      sendDefaultPii: false,
+      // The loader turns these on by default; keep them off (no session recording, no tracing).
+      tracesSampleRate: 0,
+      replaysSessionSampleRate: 0,
+      replaysOnErrorSampleRate: 0,
+      integrations: (defaults) => defaults.filter((i) => i.name !== "Replay" && i.name !== "BrowserTracing")
     });
     Sentry.setTag("page", "hq");
   };
