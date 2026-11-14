@@ -70,10 +70,10 @@
   .box::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.35), transparent 22%); pointer-events: none; }
   .sleeve { position: absolute; left: 0; right: 0; top: 24%; bottom: 24%; background: var(--pohutukawa); color: var(--ivory);
     display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 8%; transition: background-color .3s; }
-  .sleeve[data-box="Dad"] { background: var(--bush); }
-  .sleeve[data-box="Sibling"] { background: var(--kowhai); color: var(--ink); }
-  .sleeve[data-box="Partner"] { background: var(--musk); color: var(--ink); }
-  .sleeve[data-box="Kids"] { background: var(--jandal); }
+  .sleeve[data-colour="bush"] { background: var(--bush); }
+  .sleeve[data-colour="kowhai"] { background: var(--kowhai); color: var(--ink); }
+  .sleeve[data-colour="musk"] { background: var(--musk); color: var(--ink); }
+  .sleeve[data-colour="jandal"] { background: var(--jandal); }
   .sleeve-over { position: absolute; top: 9%; font: 500 9px/1 var(--ui); letter-spacing: .22em; text-transform: uppercase; opacity: .9; }
   .sleeve-for { font: 500 clamp(30px, 5vw, 56px)/1 var(--display); letter-spacing: .06em; text-transform: uppercase; overflow-wrap: anywhere; }
   .sleeve-from { font: italic 400 clamp(14px, 1.8vw, 18px)/1.3 var(--text); margin-top: 10px; }
@@ -101,6 +101,19 @@
   .person + .person { margin-top: 4px; }
   .remove { display: block; margin: -6px 0 8px auto; background: none; border: 0; font: 500 13px var(--ui); color: var(--ink-soft); cursor: pointer; padding: 6px 0; text-decoration: underline; }
   .remove[hidden] { display: none; }
+  .pick-label { display: block; font: 500 14px/1.3 var(--ui); letter-spacing: .02em; margin-bottom: 8px; }
+  .pick-name { font-weight: 400; color: var(--ink-soft); }
+  .swatches { display: flex; flex-wrap: wrap; gap: 12px; }
+  .swatch { position: relative; width: 44px; height: 44px; margin: 0; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(27,26,23,.22); }
+  .swatch[data-colour="pohutukawa"] { background: var(--pohutukawa); }
+  .swatch[data-colour="bush"] { background: var(--bush); }
+  .swatch[data-colour="kowhai"] { background: var(--kowhai); }
+  .swatch[data-colour="musk"] { background: var(--musk); }
+  .swatch[data-colour="jandal"] { background: var(--jandal); }
+  .swatch input { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; padding: 0; opacity: 0; cursor: pointer; }
+  .swatch.is-on { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .swatch:focus-within { outline: 2px solid var(--gilt-deep); outline-offset: 3px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .bday { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
   .add, .submit, .copy { font: 600 14px/1 var(--ui); letter-spacing: .12em; text-transform: uppercase; border-radius: 2px; cursor: pointer; }
   .add { background: transparent; border: 1px solid var(--line-strong); color: var(--ink); padding: 15px 14px; width: 100%; }
@@ -220,7 +233,7 @@
 
       <div class="stage" aria-hidden="true">
         <div class="box">
-          <div class="sleeve" id="sleeve" data-box="Mum">
+          <div class="sleeve" id="sleeve" data-colour="pohutukawa">
             <span class="sleeve-over">Farbird · Christmas 2026</span>
             <div class="sleeve-for" id="sleeveFor">Mum</div>
             <div class="sleeve-from" id="sleeveFrom">From Chris, in New York</div>
@@ -228,7 +241,7 @@
           </div>
           <div class="seal"><span><b>Packed in</b><i>Auckland</i></span></div>
         </div>
-        <p class="stage-note">This is the sleeve. Type her name in the form and watch it change; pick who it's for and the colour changes too.</p>
+        <p class="stage-note">This is the sleeve. Type her name in the form and watch it change, then pick her colour. Every sleeve is printed to order.</p>
       </div>
     </div>
 
@@ -398,7 +411,12 @@
         <input data-k="nz_city" placeholder="Auckland" autocomplete="off">
       </div>
     </div>
-    <div style="margin-top:12px">
+    <div class="sleeve-pick" style="margin-top:14px">
+      <span class="pick-label">Sleeve colour <span class="pick-name"></span></span>
+      <input type="hidden" data-k="sleeve">
+      <div class="swatches" role="radiogroup"></div>
+    </div>
+    <div style="margin-top:14px">
       <label>Their birthday (optional, so we can remind you)</label>
       <div class="bday">
         <select data-k="birthday_day" aria-label="Birthday day"><option value="">Day</option></select>
@@ -447,6 +465,20 @@
   // People rows
   const peopleEl = $("people");
   const tpl = $("personTpl");
+  const SLEEVES = { pohutukawa: "Pōhutukawa red", bush: "Bush green", kowhai: "Kōwhai yellow", musk: "Musk pink", jandal: "Jandal blue" };
+  const DEFAULT_SLEEVE = { Mum: "pohutukawa", Dad: "bush", Sibling: "kowhai", Partner: "musk", Kids: "jandal" };
+  let personSeq = 0;
+  let activePerson = null;
+  function setSleeve(node, key, quiet) {
+    node.querySelector('[data-k="sleeve"]').value = key;
+    node.querySelectorAll(".swatch").forEach(s => {
+      const on = s.dataset.colour === key;
+      s.classList.toggle("is-on", on);
+      s.querySelector("input").checked = on;
+    });
+    node.querySelector(".pick-name").textContent = "· " + SLEEVES[key];
+    if (!quiet) { activePerson = node; updateSleeve(); }
+  }
   function addPerson(rel) {
     if (peopleEl.children.length >= 10) return;
     const node = tpl.content.firstElementChild.cloneNode(true);
@@ -455,15 +487,37 @@
     const monSel = node.querySelector('[data-k="birthday_month"]');
     MONTHS.forEach((m, i) => monSel.add(new Option(m, i + 1)));
     if (rel) node.querySelector('[data-k="relationship"]').value = rel;
+    const seq = ++personSeq;
+    const relSel = node.querySelector('[data-k="relationship"]');
+    const pickLabel = node.querySelector(".pick-label");
+    pickLabel.id = "sleeveLabel" + seq;
+    const sw = node.querySelector(".swatches");
+    sw.setAttribute("aria-labelledby", pickLabel.id);
+    Object.entries(SLEEVES).forEach(([key, label]) => {
+      const l = document.createElement("label");
+      l.className = "swatch"; l.dataset.colour = key; l.title = label;
+      const r = document.createElement("input");
+      r.type = "radio"; r.name = "sleeve-" + seq; r.value = key;
+      const t = document.createElement("span");
+      t.className = "sr"; t.textContent = label;
+      l.append(r, t); sw.append(l);
+      r.addEventListener("change", () => { node.dataset.picked = "1"; setSleeve(node, key); });
+    });
+    setSleeve(node, DEFAULT_SLEEVE[relSel.value] || "pohutukawa", true);
+    relSel.addEventListener("change", () => {
+      if (!node.dataset.picked) setSleeve(node, DEFAULT_SLEEVE[relSel.value] || "pohutukawa");
+    });
     const PH = { Mum: "Sandra", Dad: "Graham", Sibling: "Kate", Partner: "Aroha", Kids: "Nico" };
     const nameIn = node.querySelector('[data-k="first_name"]');
     const setPh = () => nameIn.placeholder = PH[node.querySelector('[data-k="relationship"]').value] || "Their name";
     setPh(); node.querySelector('[data-k="relationship"]').addEventListener("change", setPh);
     node.querySelector(".remove").addEventListener("click", () => {
-      if (peopleEl.children.length > 1) { node.remove(); updateSleeve(); }
+      if (peopleEl.children.length > 1) { if (activePerson === node) activePerson = null; node.remove(); updateSleeve(); }
     });
-    node.addEventListener("input", updateSleeve);
-    node.addEventListener("change", updateSleeve);
+    const follow = () => { activePerson = node; updateSleeve(); };
+    node.addEventListener("focusin", follow);
+    node.addEventListener("input", follow);
+    node.addEventListener("change", follow);
     peopleEl.appendChild(node);
     syncRemove();
     return node;
@@ -483,12 +537,12 @@
   // Live sleeve
   function updateSleeve() {
     syncRemove();
-    const first = peopleEl.querySelector(".person");
+    const first = (activePerson && activePerson.isConnected) ? activePerson : peopleEl.querySelector(".person");
     const name = first.querySelector('[data-k="first_name"]').value.trim();
     const rel = first.querySelector('[data-k="relationship"]').value;
     const who = name || (["Mum","Dad"].includes(rel) ? rel : "Them");
     $("sleeveFor").textContent = who;
-    $("sleeve").dataset.box = ["Mum","Dad","Sibling","Partner","Kids"].includes(rel) ? rel : "Mum";
+    $("sleeve").dataset.colour = first.querySelector('[data-k="sleeve"]').value || "pohutukawa";
     $("h1who").textContent = name || (["Mum","Dad"].includes(rel) ? rel : "They");
     const me = $("fname").value.trim() || "Chris";
     const city = CITY[$("country").value] || "far away";
@@ -552,7 +606,7 @@
   });
   $("addMore").addEventListener("click", () => {
     $("doneCard").hidden = true; $("formCard").hidden = false;
-    peopleEl.innerHTML = ""; addPerson("Dad");
+    peopleEl.innerHTML = ""; activePerson = null; addPerson("Dad"); updateSleeve();
     $("email").value = store.get("fb_email") || "";
   });
 })();
