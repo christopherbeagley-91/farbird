@@ -3,6 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  // Sentry error tracking (project farbird-web). Errors only: no tracing, no replay, no personal data.
+  window.sentryOnLoad = function () {
+    Sentry.init({
+      environment: /(^|\.)farbird\.co$/.test(location.hostname) ? "production" : "development",
+      sendDefaultPii: false
+    });
+    Sentry.setTag("page", "waitlist");
+  };
+</script>
+<script src="https://js.sentry-cdn.com/ad8378eee097e1716c818c85f5157172.min.js" crossorigin="anonymous"></script>
 <title>Farbird — NZ gift boxes for Kiwis who leave it late</title>
 <meta name="description" content="Personalised NZ gift boxes with their name printed on the sleeve, packed in Auckland and delivered anywhere in NZ. Join the Christmas 2026 waitlist.">
 <meta property="og:title" content="Mum will think you planned this">
@@ -404,6 +415,14 @@
   const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
+  // Send a handled failure to Sentry without the person's details.
+  const report = (err, step) => {
+    try {
+      if (!window.Sentry) return;
+      const e = err instanceof Error ? err : new Error(err && err.message ? err.message : String(err));
+      Sentry.captureException(e, { tags: { step }, extra: { code: err && err.code, details: err && err.details } });
+    } catch {}
+  };
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch {} }
@@ -488,7 +507,7 @@
       o.box = o.relationship;
       return o;
     });
-    if (!sb) { $("error").textContent = "We couldn't reach the waitlist. Check your connection and try again."; return; }
+    if (!sb) { report(new Error("Supabase client failed to load"), "client"); $("error").textContent = "We couldn't reach the waitlist. Check your connection and try again."; return; }
     $("submit").disabled = true; $("submit").textContent = "Saving your spot…";
     const { data, error } = await sb.rpc("join_waitlist", {
       p_email: email,
@@ -501,7 +520,7 @@
       p_utm_campaign: params.get("utm_campaign")
     });
     $("submit").disabled = false; $("submit").textContent = "Save my spot";
-    if (error) { $("error").textContent = "That didn't save. Check your email address and try again."; return; }
+    if (error) { report(error, "join_waitlist"); $("error").textContent = "That didn't save. Check your email address and try again."; return; }
     store.set("fb_email", email);
     showDone(data, people);
   });

@@ -3,6 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  // Sentry error tracking (project farbird-web). Errors only: no tracing, no replay, no personal data.
+  window.sentryOnLoad = function () {
+    Sentry.init({
+      environment: /(^|\.)farbird\.co$/.test(location.hostname) ? "production" : "development",
+      sendDefaultPii: false
+    });
+    Sentry.setTag("page", "hq");
+  };
+</script>
+<script src="https://js.sentry-cdn.com/ad8378eee097e1716c818c85f5157172.min.js" crossorigin="anonymous"></script>
 <meta name="robots" content="noindex">
 <title>Farbird HQ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
