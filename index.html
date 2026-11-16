@@ -152,6 +152,10 @@
   .peek { position: absolute; left: 10px; bottom: 10px; font: 500 10px/1 var(--ui); letter-spacing: .18em; text-transform: uppercase; background: var(--ivory); color: var(--ink); padding: 7px 9px; }
   .boxgrid h3 { font: 500 14px/1.2 var(--ui); letter-spacing: .18em; text-transform: uppercase; margin: 16px 0 6px; }
   .boxgrid p { margin: 0; font: italic 400 17px/1.4 var(--text); color: var(--ink-soft); }
+  .code-field { margin-top: 14px; max-width: 320px; }
+  .code-field input { text-transform: uppercase; letter-spacing: .06em; }
+  .code-field input::placeholder { text-transform: none; letter-spacing: 0; }
+  .opt { font-weight: 400; color: var(--ink-soft); }
   .note { font: italic 400 15px/1.45 var(--text); color: var(--ink-soft); margin: 28px 0 0; padding-top: 10px; border-top: 1px solid var(--line); max-width: 46em; }
   .price { font-size: 19px; margin: 18px 0 0; }
 
@@ -278,6 +282,10 @@
                 </select>
               </div>
             </div>
+            <div class="code-field">
+              <label for="code">Partner code <span class="opt">(optional)</span></label>
+              <input id="code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" placeholder="From a Kiwi group or event">
+            </div>
           </fieldset>
 
           <button class="submit" type="submit" id="submit">Save my spot</button>
@@ -290,6 +298,7 @@
       <div class="card done" id="doneCard" hidden>
         <h2 id="doneTitle">You're on the list.</h2>
         <p class="hint" id="doneText">We'll email you when pre-sale opens on 16 November, 72 hours before everyone else.</p>
+        <p class="hint" id="codeNote" hidden></p>
         <div class="stats">
           <div><b id="pos">—</b>on the list</div>
           <div><b id="refs">0</b>mates joined</div>
@@ -451,6 +460,7 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch {} }
   };
   if (params.get("ref")) store.set("fb_ref", params.get("ref"));
+  if (params.get("code")) $("code").value = params.get("code").replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 20);
 
   // Tap a box to peek inside (touch screens have no hover)
   document.querySelectorAll(".shot .open").forEach(img => {
@@ -581,10 +591,24 @@
     $("submit").disabled = false; $("submit").textContent = "Save my spot";
     if (error) { report(error, "join_waitlist"); $("error").textContent = "That didn't save. Check your email address and try again."; return; }
     store.set("fb_email", email);
-    showDone(data, people);
+    const code = $("code").value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    let codeResult = null;
+    if (code) {
+      const r = await sb.rpc("apply_partner_code", { p_referral_code: data.referral_code, p_code: code });
+      if (r.error) report(r.error, "apply_partner_code");
+      codeResult = r.error ? { valid: false } : r.data;
+    }
+    showDone(data, people, code, codeResult);
   });
 
-  function showDone(d, people) {
+  function showDone(d, people, code, codeResult) {
+    const note = $("codeNote");
+    if (code && codeResult) {
+      note.textContent = codeResult.valid
+        ? `Code ${codeResult.code} saved: ${codeResult.offer} at pre-sale.`
+        : `We didn't recognise the code ${code}. Email hello@farbird.co and we'll sort it.`;
+      note.hidden = false;
+    }
     const link = `${location.origin}${location.pathname}?ref=${d.referral_code}`;
     $("refLink").value = link;
     $("pos").textContent = "#" + d.position;
