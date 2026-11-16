@@ -37,6 +37,7 @@
   ul { padding-left: 20px; }
   li { margin-bottom: 6px; }
   footer { padding-top: 32px; padding-bottom: 48px; font-size: 14px; color: var(--ink-soft); }
+  #adsOff { font: 600 12px/1 "Instrument Sans", system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; padding: 10px 14px; min-height: 40px; border: 1px solid #1B1A17; border-radius: 2px; background: transparent; color: #1B1A17; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -50,7 +51,7 @@
 <main>
 <div class="wrap">
   <h1>Privacy statement</h1>
-  <p class="updated">Last updated 13 November 2026</p>
+  <p class="updated">Last updated 16 November 2026</p>
 
   <div class="short">
     <p><strong>The short version.</strong> We collect your details and the details of the people you're buying for so we can remind you about their dates and deliver their boxes. We don't sell anyone's details. You can see, change or delete them any time by emailing <a href="mailto:hello@farbird.co">hello@farbird.co</a>.</p>
@@ -74,7 +75,15 @@
   </table>
   </div>
   <p>You don't have to give us anything, but without an email we can't save your spot, and without a recipient's details we can't send their box.</p>
-  <p>Your browser also keeps your referral code and email on your device, so the page remembers you if you come back. You can clear this in your browser settings. We don't use advertising cookies on this page.</p>
+  <p>Your browser also keeps your referral code and email on your device, so the page remembers you if you come back. You can clear this in your browser settings. </p>
+  <h2 id="ads">Measuring our ads</h2>
+  <p>When our ads are running, the waitlist page uses Meta's pixel (Facebook and Instagram) to count which ads lead to signups. It sets a cookie and tells Meta when you visit the page and when you join the waitlist. It never sends your email, your name or the people you add. In the UK and Europe it only runs if you say yes. Anywhere else, you can switch it off on this device: <button type="button" id="adsOff">Switch off ad measurement</button> <span id="adsOffDone" hidden>Done: it's off on this device.</span></p>
+  <script>
+    document.getElementById("adsOff").addEventListener("click", function () {
+      try { localStorage.setItem("fb_ads", "no"); } catch (e) {}
+      document.getElementById("adsOffDone").hidden = false;
+    });
+  </script>
 
   <h2>The people you buy for</h2>
   <p>When you add someone, you're giving us their details. Please only add people you're planning to send something to. We use their details only to remind you and to deliver their box, never to market to them. Every box includes a short note saying who sent it and how they can ask us to delete their details.</p>
