@@ -703,7 +703,10 @@ const BE_DEFAULTS = [
   ["boxes_per_customer", "Price", "Boxes per customer", 1.6, "boxes"],
   ["product_cost", "Box costs", "Gifts and treats", 35, "NZ$"],
   ["base_kit", "Box costs", "Sleeve, box, tissue, card, filler, carton", 8, "NZ$"],
-  ["courier", "Box costs", "Courier per parcel", 11, "NZ$"],
+  ["courier", "Box costs", "Courier per parcel, North Island", 10, "NZ$"],
+  ["courier_si", "Box costs", "Courier per parcel, South Island", 20.73, "NZ$"],
+  ["si_premium", "Price", "South Island delivery premium, per order", 11.99, "NZ$"],
+  ["si_share", "Price", "Orders going to the South Island", 25, "%"],
   ["pack_wage", "Packing", "Packer hourly wage", 20, "NZ$/hr"],
   ["pack_holiday_pct", "Packing", "Holiday pay", 8, "%"],
   ["pack_kiwisaver_pct", "Packing", "KiwiSaver employer contribution", 3.5, "%"],
@@ -717,7 +720,9 @@ function breakeven(v, fixed) {
   const packHour = v.pack_wage * (1 + v.pack_holiday_pct / 100 + v.pack_kiwisaver_pct / 100);
   const packing = packHour * v.pack_minutes / 60;
   const fees = net * v.fee_pct / 100 + v.fee_fixed;
-  const costs = [["Gifts and treats", v.product_cost], ["Box kit and print", v.base_kit], ["Courier", v.courier], ["Packing labour", packing], ["Card fees", fees]];
+  // South Island parcels cost courier_si instead of courier; the customer pays si_premium per order on top.
+  const siNet = (v.si_share || 0) / 100 * ((v.courier_si || 0) - v.courier - (v.si_premium || 0));
+  const costs = [["Gifts and treats", v.product_cost], ["Box kit and print", v.base_kit], ["Courier", v.courier], ["South Island delivery, net of premium", siNet], ["Packing labour", packing], ["Card fees", fees]];
   const variable = costs.reduce((s, [, n]) => s + n, 0);
   const gp = net - variable;
   const boxes = gp > 0 ? Math.ceil(fixed / gp) : null;
@@ -730,7 +735,7 @@ async function drawBreakeven(budget, spent, revenue) {
     sb.from("hq_assumptions").select("*").order("sort"),
     sb.from("hq_boxes").select("price_nzd, cogs_nzd")
   ]);
-  const inputs = (rows && rows.length ? rows : BE_DEFAULTS).map(r => ({ ...r, value: Number(r.value) }));
+  const inputs = (rows && rows.length ? [...rows, ...BE_DEFAULTS.filter(d => !rows.some(r => r.key === d.key))] : BE_DEFAULTS).map(r => ({ ...r, value: Number(r.value) }));
   const canSave = !error && rows && rows.length;
   const costed = (boxes || []).filter(b => b.cogs_nzd);
   const boxCogs = costed.length ? costed.reduce((s, b) => s + Number(b.cogs_nzd), 0) / costed.length : null;
@@ -756,7 +761,7 @@ async function drawBreakeven(budget, spent, revenue) {
       <tr style="cursor:default"><th>Per box</th><th class="num">NZD</th></tr>
       <tr style="cursor:default"><td>Price</td><td class="num">${nzd2(v.avg_price)}</td></tr>
       <tr style="cursor:default"><td>Less offer discount</td><td class="num">−${nzd2(v.discount_per_box)}</td></tr>
-      ${b.costs.map(([k, n]) => `<tr style="cursor:default"><td>Less ${esc(k.toLowerCase())}${k === "Packing labour" ? ` <span class="note">(${nzd2(b.packHour)}/hr)</span>` : ""}</td><td class="num">−${nzd2(n)}</td></tr>`).join("")}
+      ${b.costs.map(([k, n]) => `<tr style="cursor:default"><td>Less ${esc(k.toLowerCase())}${k === "Packing labour" ? ` <span class="note">(${nzd2(b.packHour)}/hr)</span>` : ""}</td><td class="num">${n < 0 ? "+" : "−"}${nzd2(Math.abs(n))}</td></tr>`).join("")}
       <tr style="cursor:default"><td><b>Gross profit per box</b></td><td class="num ${b.gp < 20 ? "overdue" : ""}"><b>${nzd2(b.gp)}</b></td></tr>`;
     document.getElementById("beOut").innerHTML = `
       <div class="kpi"><b>${nzd(fixed)}</b><span>fixed costs to cover</span></div>
