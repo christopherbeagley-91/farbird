@@ -715,8 +715,43 @@ const BE_DEFAULTS = [
   ["fee_fixed", "Card fees", "Per-order card fee", 0.3, "NZ$"],
 ].map(([key, grp, label, value, unit], i) => ({ key, grp, label, value, unit, sort: i, notes: "" }));
 
-function breakeven(v, fixed) {
-  const net = v.avg_price - v.discount_per_box;
+/* ---------- Market pricing: local-currency prices by buyer market, stored in hq_assumptions (grp "Markets") ---------- */
+const MARKETS = [
+  // code, name, currency, share %, adult price, kids price, local currency per NZ$1 (mid-market, early Nov 2026)
+  ["nz", "New Zealand", "NZ$", 0, 99, 59, 1],
+  ["au", "Australia", "A$", 30, 85.99, 49.99, 0.808],
+  ["uk", "United Kingdom", "£", 40, 45.99, 25.99, 0.4179],
+  ["us", "United States", "US$", 20, 59.99, 35.99, 0.563],
+  ["ca", "Canada", "C$", 10, 85.99, 49.99, 0.7861],
+];
+const MK_DEFAULTS = [
+  ...MARKETS.flatMap(([c, name, cur, share, adult, kids, fx], i) => [
+    [`mkt_${c}_share`, `${name}: share of buyers`, share, "%"],
+    [`mkt_${c}_adult`, `${name}: adult box price`, adult, cur],
+    [`mkt_${c}_kids`, `${name}: kids box price`, kids, cur],
+    [`mkt_${c}_fx`, `${name}: ${cur} per NZ$1`, fx, cur],
+  ]),
+  ["mkt_kids_share", "Kids boxes, share of boxes sold", 20, "%"],
+  ["mkt_fx_fee_pct", "Currency conversion fee on non-NZD sales", 1.5, "%"],
+].map(([key, label, value, unit], i) => ({ key, grp: "Markets", label, value, unit, sort: 100 + i, notes: "" }));
+
+// NZ$ received per box in each market, after the conversion fee, and the buyer-weighted average.
+function marketMix(v) {
+  const kids = (v.mkt_kids_share || 0) / 100, fee = (v.mkt_fx_fee_pct || 0) / 100;
+  const rows = MARKETS.map(([c, name, cur]) => {
+    const fx = v[`mkt_${c}_fx`] || 1, adult = v[`mkt_${c}_adult`] || 0, kidsP = v[`mkt_${c}_kids`] || 0;
+    const keep = c === "nz" ? 1 : 1 - fee;
+    const nzAdult = adult / fx, nzKids = kidsP / fx;
+    const perBox = ((1 - kids) * nzAdult + kids * nzKids) * keep;
+    return { c, name, cur, share: v[`mkt_${c}_share`] || 0, nzAdult, nzKids, perBox };
+  });
+  const totShare = rows.reduce((s, r) => s + r.share, 0);
+  const weighted = totShare ? rows.reduce((s, r) => s + r.perBox * r.share, 0) / totShare : null;
+  return { rows, totShare, weighted, nzAdultBase: v.mkt_nz_adult || 0, nzKidsBase: v.mkt_nz_kids || 0 };
+}
+
+function breakeven(v, fixed, price) {
+  const net = (price ?? v.avg_price) - v.discount_per_box;
   const packHour = v.pack_wage * (1 + v.pack_holiday_pct / 100 + v.pack_kiwisaver_pct / 100);
   const packing = packHour * v.pack_minutes / 60;
   const fees = net * v.fee_pct / 100 + v.fee_fixed;
@@ -735,17 +770,31 @@ async function drawBreakeven(budget, spent, revenue) {
     sb.from("hq_assumptions").select("*").order("sort"),
     sb.from("hq_boxes").select("price_nzd, cogs_nzd")
   ]);
-  const inputs = (rows && rows.length ? [...rows, ...BE_DEFAULTS.filter(d => !rows.some(r => r.key === d.key))] : BE_DEFAULTS).map(r => ({ ...r, value: Number(r.value) }));
+  const ALL_DEFAULTS = [...BE_DEFAULTS, ...MK_DEFAULTS];
+  const inputs = (rows && rows.length ? [...rows, ...ALL_DEFAULTS.filter(d => !rows.some(r => r.key === d.key))] : ALL_DEFAULTS).map(r => ({ ...r, value: Number(r.value) }));
+  const inp = k => { const r = inputs.find(x => x.key === k); return `<input data-be="${esc(k)}" type="number" step="any" min="0" value="${r ? r.value : 0}" style="width:76px;text-align:right">`; };
   const canSave = !error && rows && rows.length;
   const costed = (boxes || []).filter(b => b.cogs_nzd);
   const boxCogs = costed.length ? costed.reduce((s, b) => s + Number(b.cogs_nzd), 0) / costed.length : null;
   const fixed = Math.max(budget, spent);
-  const groups = [...new Set(inputs.map(r => r.grp))];
-  el.innerHTML = `<h2>Breakeven</h2>
+  const beInputs = inputs.filter(r => r.grp !== "Markets" && r.key !== "avg_price");
+  const groups = [...new Set(beInputs.map(r => r.grp))];
+  el.innerHTML = `<h2>Prices by market</h2>
+    <p class="note" style="margin:0 0 12px">Shopify charges buyers in their own currency, using these fixed prices. Edit the buyer mix, local prices or exchange rates and the weighted price per box flows into the breakeven below. Costs are the same for every market; card fees scale with price.</p>
+    <div class="tablewrap" style="border:0"><table class="be-in"><thead><tr><th>Market</th><th class="num">Buyers</th><th class="num">Adult box</th><th class="num">Kids box</th><th class="num">Per NZ$1</th><th class="num">Adult in NZ$</th><th class="num">vs NZ$ price</th><th class="num">NZ$ per box*</th><th class="num">Profit per box</th><th class="num">Margin</th></tr></thead><tbody>
+      ${MARKETS.map(([c, name, cur]) => `<tr style="cursor:default"><td>${esc(name)} <span class="note">${esc(cur)}</span></td>
+        <td class="num">${inp(`mkt_${c}_share`)} <span class="note">%</span></td><td class="num">${inp(`mkt_${c}_adult`)}</td><td class="num">${inp(`mkt_${c}_kids`)}</td>
+        <td class="num">${c === "nz" ? "1" : inp(`mkt_${c}_fx`)}</td>
+        <td class="num" id="mk-${c}-adult"></td><td class="num" id="mk-${c}-prem"></td><td class="num" id="mk-${c}-box"></td><td class="num" id="mk-${c}-gp"></td><td class="num" id="mk-${c}-mg"></td></tr>`).join("")}
+      <tr style="cursor:default"><td><b>Weighted average</b></td><td class="num" id="mk-share"></td><td colspan="5" class="note">Kids boxes ${inp("mkt_kids_share")} % of boxes · conversion fee ${inp("mkt_fx_fee_pct")} %</td><td class="num" id="mk-w-box"></td><td class="num" id="mk-w-gp"></td><td class="num" id="mk-w-mg"></td></tr>
+    </tbody></table></div>
+    <p class="note" style="margin:6px 0 0">* Blended adult and kids price in NZ$, after the conversion fee and before the offer discount. Profit and margin are after every per-box cost below; margin is profit as a share of the discounted price. Rates are mid-market from early November 2026: update them when you set Shopify prices.</p>
+    <div class="kpis" id="mkOut" style="margin:12px 0 24px"></div>
+    <h2>Breakeven</h2>
     <p class="note" style="margin:0 0 12px">Fixed costs are the Budget lines below (or actual spend, if higher). Change any input and the maths updates${canSave ? " and saves for the whole team" : ""}.${canSave ? "" : " <b>Inputs aren't saving yet: the hq_assumptions table is missing.</b>"}${boxCogs ? ` Boxes tab average COGS: ${nzd2(boxCogs)}.` : ""}</p>
     <div class="be-grid">
       <div class="tablewrap" style="border:0"><table class="be-in"><tbody>
-        ${groups.map(g => `<tr style="cursor:default"><th colspan="2">${esc(g)}</th></tr>` + inputs.filter(r => r.grp === g).map(r => `
+        ${groups.map(g => `<tr style="cursor:default"><th colspan="2">${esc(g)}</th></tr>` + beInputs.filter(r => r.grp === g).map(r => `
           <tr style="cursor:default"><td>${esc(r.label)}${r.notes ? `<div class="note">${esc(r.notes)}</div>` : ""}</td>
           <td class="num"><label style="white-space:nowrap"><input data-be="${esc(r.key)}" type="number" step="any" min="0" value="${r.value}" style="width:84px;text-align:right"> <span class="note">${esc(r.unit)}</span></label></td></tr>`).join("")).join("")}
       </tbody></table></div>
@@ -754,12 +803,31 @@ async function drawBreakeven(budget, spent, revenue) {
     <div class="kpis" id="beOut" style="margin:12px 0 0"></div>`;
   const vals = () => Object.fromEntries(inputs.map(r => [r.key, Math.max(0, Number(el.querySelector(`[data-be="${r.key}"]`).value) || 0)]));
   const calc = () => {
-    const v = vals(), b = breakeven(v, fixed);
+    const v = vals(), mix = marketMix(v), b = breakeven(v, fixed, mix.weighted ?? v.avg_price);
+    const pctTxt = n => (n * 100).toFixed(1) + "%";
+    const set = (id, h, cls) => { const e = document.getElementById(id); if (e) { e.innerHTML = h; e.className = "num" + (cls ? " " + cls : ""); } };
+    mix.rows.forEach(r => {
+      const m = breakeven(v, fixed, r.perBox), prem = mix.nzAdultBase ? r.nzAdult / mix.nzAdultBase - 1 : 0;
+      set(`mk-${r.c}-adult`, nzd2(r.nzAdult));
+      set(`mk-${r.c}-prem`, (prem >= 0 ? "+" : "") + pctTxt(prem));
+      set(`mk-${r.c}-box`, nzd2(r.perBox));
+      set(`mk-${r.c}-gp`, nzd2(m.gp), m.gp < 20 ? "overdue" : "");
+      set(`mk-${r.c}-mg`, m.net > 0 ? pctTxt(m.gp / m.net) : "–");
+    });
+    set("mk-share", `${Math.round(mix.totShare)}%`, Math.round(mix.totShare) !== 100 ? "overdue" : "");
+    set("mk-w-box", mix.weighted != null ? `<b>${nzd2(mix.weighted)}</b>` : "–");
+    set("mk-w-gp", `<b>${nzd2(b.gp)}</b>`, b.gp < 20 ? "overdue" : "");
+    set("mk-w-mg", b.net > 0 ? `<b>${pctTxt(b.gp / b.net)}</b>` : "–");
+    document.getElementById("mkOut").innerHTML = `
+      <div class="kpi"><b>${mix.weighted != null ? nzd2(mix.weighted) : "–"}</b><span>weighted NZ$ per box, before discount</span></div>
+      <div class="kpi ${b.gp < 20 ? "alert" : ""}"><b>${nzd2(b.gp)}</b><span>weighted profit per box</span></div>
+      <div class="kpi"><b>${b.net > 0 ? pctTxt(b.gp / b.net) : "–"}</b><span>weighted gross margin</span></div>
+      <div class="kpi ${Math.round(mix.totShare) !== 100 ? "alert" : ""}"><b>${Math.round(mix.totShare)}%</b><span>buyer mix total (should be 100%)</span></div>`;
     const soldEst = b.net > 0 ? Math.round(revenue / b.net) : 0;
     const pct = b.boxes ? Math.min(100, Math.round(soldEst / b.boxes * 100)) : 0;
     document.getElementById("beBox").innerHTML = `
       <tr style="cursor:default"><th>Per box</th><th class="num">NZD</th></tr>
-      <tr style="cursor:default"><td>Price</td><td class="num">${nzd2(v.avg_price)}</td></tr>
+      <tr style="cursor:default"><td>Weighted price, from Prices by market</td><td class="num">${nzd2(b.net + v.discount_per_box)}</td></tr>
       <tr style="cursor:default"><td>Less offer discount</td><td class="num">−${nzd2(v.discount_per_box)}</td></tr>
       ${b.costs.map(([k, n]) => `<tr style="cursor:default"><td>Less ${esc(k.toLowerCase())}${k === "Packing labour" ? ` <span class="note">(${nzd2(b.packHour)}/hr)</span>` : ""}</td><td class="num">${n < 0 ? "+" : "−"}${nzd2(Math.abs(n))}</td></tr>`).join("")}
       <tr style="cursor:default"><td><b>Gross profit per box</b></td><td class="num ${b.gp < 20 ? "overdue" : ""}"><b>${nzd2(b.gp)}</b></td></tr>`;
