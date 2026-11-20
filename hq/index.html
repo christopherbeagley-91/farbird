@@ -620,18 +620,45 @@ async function boxes() {
     <div class="panel" id="matrix"><p class="note">Loading the box matrix…</p></div>
     <h2>Box range</h2><div id="tbl"></div>
     <h2 style="margin-top:24px">All shortlisted items</h2><div id="items"></div>`;
-  const [rows, items, { data: asm }] = await Promise.all([
+  const [rows, items, { data: asm }, { data: sups }] = await Promise.all([
     load("hq_boxes"),
     sb.from("hq_box_items").select("*").then(r => r.error ? null : (state.cache.hq_box_items = r.data)),
-    sb.from("hq_assumptions").select("value").eq("key", "product_cost").maybeSingle()
+    sb.from("hq_assumptions").select("*"),
+    sb.from("hq_suppliers").select("name, status, unit_cost_nzd")
   ]);
   drawList("hq_boxes", rows);
   const m = document.getElementById("matrix");
   if (!items) { m.innerHTML = `<p class="note"><b>The box matrix isn't set up yet:</b> the hq_box_items table is missing.</p>`; document.getElementById("items").remove(); return; }
   drawList("hq_box_items", items, "items");
-  drawMatrix(items, Number(asm?.value ?? BE_DEFAULTS.find(r => r.key === "product_cost").value));
+  const all = [...BE_DEFAULTS, ...MK_DEFAULTS];
+  const v = Object.fromEntries([...all, ...(asm || [])].map(r => [r.key, Number(r.value)]));
+  drawMatrix(items, v, sups || []);
 }
-function drawMatrix(items, budget) {
+// Profit and margin per box at the buyer-weighted market price (Financials → Prices by market), after every per-box cost.
+function marginRows(sum, quoted, v) {
+  const mix = marketMix(v), fee = (v.mkt_fx_fee_pct || 0) / 100;
+  const tot = mix.totShare || 1;
+  const wAvg = k => mix.rows.reduce((s, r) => s + r[k] * (r.c === "nz" ? 1 : 1 - fee) * r.share, 0) / tot;
+  const price = { adult: wAvg("nzAdult"), kids: wAvg("nzKids") };
+  const calc = BOXES.map(([b]) => {
+    const p = b === "Kids" ? price.kids : price.adult;
+    const r = breakeven({ ...v, product_cost: sum[b] }, 0, p);
+    return { b, p, other: r.variable - sum[b], gp: r.gp, mg: r.net ? r.gp / r.net : 0 };
+  });
+  const row = (label, note, f) => `<tr style="cursor:default"><th scope="row">${label}${note ? `<div class="note">${note}</div>` : ""}</th>${calc.map(c => `<td class="num">${f(c)}</td>`).join("")}</tr>`;
+  return row("Prices quoted", "picks with a supplier quote", c => `${quoted[c.b] || 0} of ${SLOTS.length}`)
+    + row("Weighted price", "all markets, NZ$", c => nzd2(c.p))
+    + row("Other costs", "kit, courier, packing, fees", c => nzd2(c.other))
+    + row("Profit per box", "target NZ$20+", c => `<b class="${c.gp < 20 ? "overdue" : ""}">${nzd2(c.gp)}</b>`)
+    + row("Margin", "", c => `<b>${Math.round(c.mg * 1000) / 10}%</b>`);
+}
+// A pick's price counts as quoted once its supplier (matched by name in Suppliers) is Quoted, Sampling or Approved.
+const QUOTED = ["Quoted", "Sampling", "Approved"];
+function drawMatrix(items, v, sups) {
+  const budget = v.product_cost;
+  const supOf = i => sups.find(s => s.name && i.supplier && s.name.toLowerCase() === i.supplier.toLowerCase());
+  const isQuoted = i => QUOTED.includes(supOf(i)?.status);
+  const quoted = { };
   const target = Object.fromEntries(SLOTS.map(([k, , share]) => [k, Math.round(budget * share * 100) / 100]));
   const sum = { }, gaps = { };
   const cellHtml = (box, slot) => {
@@ -645,9 +672,10 @@ function drawMatrix(items, budget) {
     const cost = costs.length ? Math.max(...costs) : target[slot];
     sum[box] = (sum[box] || 0) + cost;
     if (!pick) gaps[box] = (gaps[box] || 0) + 1;
+    else if (picks.every(isQuoted)) quoted[box] = (quoted[box] || 0) + 1;
     const line = (i, cls) => `<button class="mx-item ${cls}" data-item="${i.id}">
         <span>${esc(i.item)}</span>
-        <small>${esc([i.supplier, i.origin].filter(Boolean).join(" · "))}${i.est_cost_nzd != null ? ` · <b class="${Number(i.est_cost_nzd) > target[slot] ? "overdue" : ""}">${nzd2(i.est_cost_nzd)}</b>` : ""}</small></button>`;
+        <small>${esc([i.supplier, i.origin].filter(Boolean).join(" · "))}${i.est_cost_nzd != null ? ` · <b class="${Number(i.est_cost_nzd) > target[slot] ? "overdue" : ""}">${nzd2(i.est_cost_nzd)}</b> ${isQuoted(i) ? `<span class="pill s-approved" title="Supplier has quoted">quoted</span>` : `<span class="note">est.</span>`}` : ""}</small></button>`;
     return `<td class="${pick ? "" : "mx-gap"}">
       ${pick ? picks.map(i => line(i, "pick")).join("") : `<div class="mx-flag">Gap: research</div>${gapRows.map(g => `<button class="mx-item" data-item="${g.id}"><small>${esc(g.notes || g.item)}</small></button>`).join("")}`}
       ${opts.map(o => line(o, "opt")).join("")}
@@ -658,7 +686,7 @@ function drawMatrix(items, budget) {
   const over = BOXES.filter(([b]) => sum[b] > budget + 0.005).length;
   const m = document.getElementById("matrix");
   m.innerHTML = `<h2>Box matrix</h2>
-    <p class="note" style="margin:0 0 12px">Items for each box should cost <b>${nzd2(budget)}</b> or less in total (the gifts-and-treats input under Financials → Breakeven), leaving room for packing, courier and the profit target. <b>Everything should feel like it came from abroad:</b> no NZ-made products, and food only through an MPI-registered NZ importer. Costs are estimates at about half of NZ retail until quotes arrive. Each gap is counted at its target cost. <b>Bold</b> = current pick; where a slot has a for-her and a for-him pick, the dearer one counts. Click any item to edit it.</p>
+    <p class="note" style="margin:0 0 12px">Items for each box should cost <b>${nzd2(budget)}</b> or less in total (the gifts-and-treats input under Financials → Breakeven), leaving room for packing, courier and the profit target. <b>Everything should feel like it came from abroad:</b> no NZ-made products, and food only through an MPI-registered NZ importer. Costs marked <b>est.</b> are about half of NZ retail; <b>quoted</b> means the supplier (matched by name under Suppliers) is at Quoted, Sampling or Approved. Profit and margin use the buyer-weighted price from Financials → Prices by market (kids box at the kids price), after kit, courier, South Island, packing and card fees. Each gap is counted at its target cost. <b>Bold</b> = current pick; where a slot has a for-her and a for-him pick, the dearer one counts. Click any item to edit it.</p>
     <div class="kpis" style="margin-bottom:12px">
       <div class="kpi ${totalGaps ? "alert" : ""}"><b>${totalGaps}</b><span>slots with no pick yet</span></div>
       <div class="kpi ${over ? "alert" : ""}"><b>${over} of ${BOXES.length}</b><span>boxes over the ${nzd2(budget)} budget</span></div>
@@ -666,6 +694,7 @@ function drawMatrix(items, budget) {
     <div class="tablewrap" style="border:0"><table class="mx"><thead><tr><th></th>${BOXES.map(([b, label, who, bg, fg]) => `<th><span class="mx-box" style="background:${bg};color:${fg}">${label}</span><div class="note">${who}</div></th>`).join("")}</tr></thead>
       <tbody>${body}
       <tr style="cursor:default"><th scope="row">Estimated items cost</th>${BOXES.map(([b]) => `<td class="num"><b class="${sum[b] > budget + 0.005 ? "overdue" : ""}">${nzd2(sum[b])}</b><div class="note">${sum[b] > budget + 0.005 ? `${nzd2(sum[b] - budget)} over` : `${nzd2(budget - sum[b])} spare`}${gaps[b] ? ` · ${gaps[b]} gap${gaps[b] > 1 ? "s" : ""}` : ""}</div></td>`).join("")}</tr>
+      ${marginRows(sum, quoted, v)}
       </tbody></table></div>`;
   m.querySelectorAll("[data-item]").forEach(b => b.onclick = () => editRow("hq_box_items", items.find(i => i.id === b.dataset.item)));
   m.querySelectorAll(".mx-add").forEach(b => b.onclick = () => editRow("hq_box_items", { box: b.dataset.box, slot: b.dataset.slot, pick: "Option" }));
