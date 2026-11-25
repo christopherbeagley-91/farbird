@@ -117,11 +117,13 @@ Deno.test("pushApproved schedules posts with media in Metricool and waits on the
   }
 });
 
-Deno.test("breakeven: defaults with the Christmas fixed costs", async () => {
+Deno.test("breakeven: NZ$ prices with delivery charged per order", async () => {
   const { breakeven, BE_DEFAULTS } = await import("./agents.ts");
   const b = breakeven(BE_DEFAULTS, 2776.05);
-  if (b.per_box.packing !== 3.72) throw new Error(`packing ${b.per_box.packing}`);
-  if (b.gross_profit_per_box !== 23.21) throw new Error(`gp ${b.gross_profit_per_box}`);
-  if (b.boxes_needed !== 120 || b.customers_needed !== 75) throw new Error(`boxes ${b.boxes_needed} customers ${b.customers_needed}`);
-  if (breakeven({ ...BE_DEFAULTS, avg_price: 50 }, 1000).boxes_needed !== null) throw new Error("negative GP should give null");
+  // 80% adult at 89 + 20% kids at 59 = 83; delivery (0.75 x 10 + 0.25 x 21.99) / 1.5 boxes = 8.66
+  if (b.box_price !== 83 || b.delivery_charged_per_box !== 8.66) throw new Error(`price ${b.box_price} delivery ${b.delivery_charged_per_box}`);
+  if (b.per_box.packing !== 3.72 || b.per_box.courier !== 8.46) throw new Error(`packing ${b.per_box.packing} courier ${b.per_box.courier}`);
+  if (b.gross_profit_per_box !== 28.43) throw new Error(`gp ${b.gross_profit_per_box}`);
+  if (b.boxes_needed !== 98 || b.orders_needed !== 66) throw new Error(`boxes ${b.boxes_needed} orders ${b.orders_needed}`);
+  if (breakeven({ ...BE_DEFAULTS, price_adult: 40, price_kids: 30 }, 1000).boxes_needed !== null) throw new Error("negative GP should give null");
 });

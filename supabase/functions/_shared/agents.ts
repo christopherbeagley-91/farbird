@@ -47,22 +47,31 @@ export function connections(agent: AgentKey): Connection[] {
 
 // ---------- Breakeven (same maths as HQ → Financials) ----------
 export const BE_DEFAULTS: Record<string, number> = {
-  avg_price: 89, discount_per_box: 5, boxes_per_customer: 1.6, product_cost: 35, base_kit: 8, courier: 11,
+  price_adult: 89, price_kids: 59, kids_share: 20, discount_per_box: 5, boxes_per_customer: 1.5,
+  delivery_ni: 10, delivery_si: 21.99, si_share: 25, product_cost: 35, base_kit: 8, courier: 10, courier_si: 20.73,
   pack_wage: 20, pack_holiday_pct: 8, pack_kiwisaver_pct: 3.5, pack_minutes: 10, fee_pct: 3.3, fee_fixed: 0.3,
 };
-export function breakeven(v: Record<string, number>, fixed: number) {
-  const net = v.avg_price - v.discount_per_box;
+// Everyone pays in NZ$. Delivery is charged and couriered once per order (up to 2 boxes to one address),
+// so delivery revenue, courier and the fixed card fee are spread over the boxes in an order.
+export function breakeven(v: Record<string, number>, fixed: number, price?: number) {
+  const bpo = Math.max(1, v.boxes_per_customer || 1), si = (v.si_share || 0) / 100, kids = (v.kids_share || 0) / 100;
+  const box_price = price ?? (1 - kids) * v.price_adult + kids * v.price_kids;
+  const net = box_price - v.discount_per_box;
+  const delivery = ((1 - si) * (v.delivery_ni || 0) + si * (v.delivery_si || 0)) / bpo;
+  const courier = ((1 - si) * (v.courier || 0) + si * (v.courier_si || 0)) / bpo;
   const packing = v.pack_wage * (1 + v.pack_holiday_pct / 100 + v.pack_kiwisaver_pct / 100) * v.pack_minutes / 60;
-  const fees = net * v.fee_pct / 100 + v.fee_fixed;
-  const per_box = { product: v.product_cost, kit_and_print: v.base_kit, courier: v.courier, packing, card_fees: fees };
+  const revenue = net + delivery;
+  const fees = revenue * v.fee_pct / 100 + v.fee_fixed / bpo;
+  const per_box = { product: v.product_cost, kit_and_print: v.base_kit, courier, packing, card_fees: fees };
   const variable = Object.values(per_box).reduce((s, n) => s + n, 0);
-  const gross_profit_per_box = net - variable;
+  const gross_profit_per_box = revenue - variable;
   const boxes_needed = gross_profit_per_box > 0 ? Math.ceil(fixed / gross_profit_per_box) : null;
   const r2 = (n: number) => Math.round(n * 100) / 100;
   return {
-    net_price: r2(net), per_box: Object.fromEntries(Object.entries(per_box).map(([k, n]) => [k, r2(n)])),
+    currency: "NZD", box_price: r2(box_price), net_price: r2(net), delivery_charged_per_box: r2(delivery), revenue_per_box: r2(revenue),
+    per_box: Object.fromEntries(Object.entries(per_box).map(([k, n]) => [k, r2(n)])),
     variable_cost_per_box: r2(variable), gross_profit_per_box: r2(gross_profit_per_box), boxes_needed,
-    customers_needed: boxes_needed ? Math.ceil(boxes_needed / Math.max(1, v.boxes_per_customer)) : null,
+    orders_needed: boxes_needed ? Math.ceil(boxes_needed / bpo) : null,
   };
 }
 
@@ -77,7 +86,7 @@ Write like a sharp colleague: lead with the answer, short sentences, sentence ca
 
 const ROLES: Record<AgentKey, string> = {
   finance: `You are the Finance agent. You own the numbers: budget vs spend, revenue, gross profit per box, breakeven progress, cash, bills to pay, GST and the go/kill numbers for 16 January.
-Targets: at least NZ$20 gross profit per box. The per-box costs (gifts and treats, box kit and print, courier, packing labour from the student packer's wage, holiday pay, KiwiSaver and minutes per box, and card fees) are the breakeven inputs in finance_summary; quote those, and say when one is still an estimate.
+Targets: at least NZ$20 gross profit per box. All prices are in NZ$ wherever the buyer lives: NZ$89 adult box, NZ$59 kids box, plus delivery once per order of up to 2 boxes (NZ$10 North Island, NZ$21.99 South Island). The per-box costs (gifts and treats, box kit and print, courier, packing labour from the student packer's wage, holiday pay, KiwiSaver and minutes per box, and card fees) are the breakeven inputs in finance_summary; quote those, and say when one is still an estimate.
 Weekly report format: headline (one line), numbers table (spent, budget left, revenue, boxes sold, gross profit per box, % to breakeven), three things to act on with owners.`,
   marketing: `You are the Marketing agent. You plan, write and schedule organic social content for Instagram (@farbirdco), TikTok (@farbirdco) and Facebook, track what drives waitlist sign-ups, and recommend paid tests (you cannot spend money).
 Audience: Kiwi blokes aged 20-35 living overseas (London, Sydney, Melbourne, New York, Toronto) who love their mum, aren't creative about presents and leave it late. Partners and sisters buy too.
