@@ -587,23 +587,31 @@ async function timeline() {
 async function waitlist() {
   main().innerHTML = `<h1>Waitlist</h1><p class="sub">Everyone who's signed up and the people they're buying for.</p><div id="agentbox"></div><div id="wl">Loading…</div>`;
   agentPanel("ops", "agentbox");
-  const [{ data: wl, error }, { data: ppl }] = await Promise.all([
+  const [{ data: wl, error }, { data: ppl }, { data: codes }, { data: used }] = await Promise.all([
     sb.from("waitlist").select("*").order("created_at", { ascending: false }),
-    sb.from("waitlist_people").select("*")
+    sb.from("waitlist_people").select("*"),
+    sb.from("partner_codes").select("*").order("created_at"),
+    sb.from("waitlist_partner_codes").select("waitlist_id, code")
   ]);
   if (error) { document.getElementById("wl").textContent = error.message; return; }
   const byW = {}; (ppl || []).forEach(p => (byW[p.waitlist_id] ||= []).push(p));
+  const codeOf = {}, codeCount = {}; (used || []).forEach(u => { codeOf[u.waitlist_id] = u.code; codeCount[u.code] = (codeCount[u.code] || 0) + 1; });
   const refCounts = {}; wl.forEach(w => w.referred_by && (refCounts[w.referred_by] = (refCounts[w.referred_by] || 0) + 1));
   document.getElementById("wl").innerHTML = `
     <div class="toolbar"><span class="muted">${wl.length} signups, ${(ppl || []).length} people</span><span class="spacer"></span><button class="btn ghost" id="csv">Download CSV</button></div>
-    <div class="tablewrap"><table><thead><tr><th>Joined</th><th>Email</th><th>Name</th><th>Country</th><th>Buying for</th><th>Referrals</th><th>Source</th></tr></thead><tbody>
+    <div class="tablewrap"><table><thead><tr><th>Joined</th><th>Email</th><th>Name</th><th>Country</th><th>Buying for</th><th>Referrals</th><th>Code</th><th>Source</th></tr></thead><tbody>
     ${wl.map(w => `<tr style="cursor:default"><td style="white-space:nowrap">${new Date(w.created_at).toLocaleDateString("en-NZ", { day: "numeric", month: "short" })}</td><td>${esc(w.email)}</td><td>${esc(w.first_name)}</td><td>${esc(w.country)}</td>
       <td>${(byW[w.id] || []).map(p => `${esc(p.first_name)} <span class="muted">(${esc(p.relationship)}${p.nz_city ? ", " + esc(p.nz_city) : ""}${p.birthday_month ? ", bday " + p.birthday_day + "/" + p.birthday_month : ""})</span>`).join("<br>")}</td>
-      <td class="num">${refCounts[w.referral_code] || 0}</td><td class="muted">${esc(w.utm_source || w.source || "")}</td></tr>`).join("") || `<tr><td colspan="7" class="empty">No signups yet. Share the waitlist link to get the first one.</td></tr>`}
+      <td class="num">${refCounts[w.referral_code] || 0}</td><td>${esc(codeOf[w.id] || "")}</td><td class="muted">${esc(w.utm_source || w.source || "")}</td></tr>`).join("") || `<tr><td colspan="8" class="empty">No signups yet. Share the waitlist link to get the first one.</td></tr>`}
+    </tbody></table></div>
+    <h2 style="margin-top:24px">Partner and promo codes</h2>
+    <p class="sub">Codes people can enter on the waitlist page. Discounts themselves are set up in Shopify with the same code.</p>
+    <div class="tablewrap"><table><thead><tr><th>Code</th><th>Partner or promo</th><th>Offer</th><th>Status</th><th class="num">Signups</th><th>Notes</th></tr></thead><tbody>
+    ${(codes || []).map(c => `<tr style="cursor:default"><td><b>${esc(c.code)}</b></td><td>${esc(c.partner)}</td><td>${esc(c.offer)}</td><td>${c.active ? "Active" : '<span class="muted">Ended</span>'}</td><td class="num">${codeCount[c.code] || 0}</td><td class="muted">${esc(c.notes || "")}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">No codes yet.</td></tr>`}
     </tbody></table></div>`;
   document.getElementById("csv").onclick = () => {
-    const rows = [["joined", "email", "first_name", "country", "referral_code", "referred_by", "person", "relationship", "nz_city", "birthday_day", "birthday_month"]];
-    wl.forEach(w => (byW[w.id] || [{}]).forEach(p => rows.push([w.created_at, w.email, w.first_name, w.country, w.referral_code, w.referred_by, p.first_name, p.relationship, p.nz_city, p.birthday_day, p.birthday_month])));
+    const rows = [["joined", "email", "first_name", "country", "referral_code", "referred_by", "partner_code", "person", "relationship", "nz_city", "birthday_day", "birthday_month"]];
+    wl.forEach(w => (byW[w.id] || [{}]).forEach(p => rows.push([w.created_at, w.email, w.first_name, w.country, w.referral_code, w.referred_by, codeOf[w.id] || "", p.first_name, p.relationship, p.nz_city, p.birthday_day, p.birthday_month])));
     const csv = rows.map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `farbird-waitlist-${today()}.csv`; a.click();
   };
